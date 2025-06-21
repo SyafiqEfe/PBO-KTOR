@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Registration</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 2rem;
+        background-color: #f4f4f9;
+      }
+      .container {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0.5rem;
+        font-size: 1rem;
+      }
+      .btn:hover {
+        background-color: #2980b9;
+      }
+      .result {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 1rem 0;
+        white-space: pre-wrap;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Test User Registration & Login</h2>
+      <p>
+        This page will create test users for each role and test the login flow.
+      </p>
+
+      <button class="btn" onclick="registerTestUsers()">
+        Register Test Users
+      </button>
+      <button class="btn" onclick="testLoginFlow()">Test Login Flow</button>
+      <button class="btn" onclick="clearResults()">Clear Results</button>
+
+      <div id="results" class="result">Ready to test...</div>
+    </div>
+
+    <script>
+      const resultsDiv = document.getElementById("results");
+
+      function log(message) {
+        resultsDiv.textContent +=
+          new Date().toLocaleTimeString() + ": " + message + "\n";
+      }
+
+      function clearResults() {
+        resultsDiv.textContent = "Results cleared...\n";
+      }
+
+      async function registerTestUsers() {
+        clearResults();
+        log("Starting test user registration...");
+
+        const testUsers = [
+          {
+            name: "Admin Test",
+            email: "admin@test.com",
+            password: "admin123",
+            role: "ADMIN",
+          },
+          {
+            name: "Dosen Test",
+            email: "dosen@test.com",
+            password: "dosen123",
+            role: "DOSEN",
+          },
+          {
+            name: "Mahasiswa Test",
+            email: "mahasiswa@test.com",
+            password: "mahasiswa123",
+            role: "MAHASISWA",
+          },
+        ];
+
+        for (const user of testUsers) {
+          try {
+            log(`Registering ${user.role}: ${user.email}`);
+
+            const response = await fetch("/api/register", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(user),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              log(`✅ ${user.role} registered successfully`);
+            } else {
+              const error = await response.text();
+              log(`❌ ${user.role} registration failed: ${error}`);
+            }
+          } catch (error) {
+            log(`❌ ${user.role} registration error: ${error.message}`);
+          }
+
+          // Small delay between requests
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        log("\n📝 Test credentials created:");
+        log("Admin: admin@test.com / admin123");
+        log("Dosen: dosen@test.com / dosen123");
+        log("Mahasiswa: mahasiswa@test.com / mahasiswa123");
+      }
+
+      async function testLoginFlow() {
+        clearResults();
+        log("Testing login flow for each role...");
+
+        const testLogins = [
+          {
+            email: "admin@test.com",
+            password: "admin123",
+            expectedRole: "ADMIN",
+          },
+          {
+            email: "dosen@test.com",
+            password: "dosen123",
+            expectedRole: "DOSEN",
+          },
+          {
+            email: "mahasiswa@test.com",
+            password: "mahasiswa123",
+            expectedRole: "MAHASISWA",
+          },
+        ];
+
+        for (const login of testLogins) {
+          try {
+            log(`\nTesting login for ${login.expectedRole}...`);
+
+            // Login
+            const loginResponse = await fetch("/api/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                email: login.email,
+                password: login.password,
+              }),
+            });
+
+            if (!loginResponse.ok) {
+              log(`❌ Login failed for ${login.expectedRole}`);
+              continue;
+            }
+
+            const loginData = await loginResponse.json();
+            log(`✅ Login successful for ${login.expectedRole}`);
+
+            // Get profile
+            const profileResponse = await fetch("/api/me", {
+              headers: {
+                Authorization: `Bearer ${loginData.token}`,
+              },
+            });
+
+            if (profileResponse.ok) {
+              const profile = await profileResponse.json();
+              log(`✅ Profile retrieved: ${profile.name} (${profile.role})`);
+
+              if (profile.role === login.expectedRole) {
+                log(`✅ Role matches expected: ${profile.role}`);
+
+                // Determine redirect URL
+                let redirectUrl;
+                switch (profile.role) {
+                  case "ADMIN":
+                    redirectUrl = "/admin/dashboard.html";
+                    break;
+                  case "DOSEN":
+                    redirectUrl = "/dosen/dashboard.html";
+                    break;
+                  case "MAHASISWA":
+                    redirectUrl = "/mahasiswa/dashboard.html";
+                    break;
+                  default:
+                    redirectUrl = "/user/dashboard.html";
+                }
+                log(`📍 Should redirect to: ${redirectUrl}`);
+              } else {
+                log(
+                  `❌ Role mismatch! Expected: ${login.expectedRole}, Got: ${profile.role}`
+                );
+              }
+            } else {
+              log(`❌ Failed to get profile for ${login.expectedRole}`);
+            }
+          } catch (error) {
+            log(`❌ Error testing ${login.expectedRole}: ${error.message}`);
+          }
+
+          // Delay between tests
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        log("\n🎯 Test completed! Check the results above.");
+      }
+    </script>
+  </body>
+</html>

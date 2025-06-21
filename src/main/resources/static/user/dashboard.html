@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+      }
+      .sidebar {
+        width: 250px;
+        background-color: #3498db;
+        color: white;
+        height: 100vh;
+        position: fixed;
+        padding: 1rem;
+      }
+      .main-content {
+        margin-left: 250px;
+        padding: 1rem;
+      }
+      .nav-item {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .nav-item:hover {
+        background-color: #2980b9;
+      }
+      .header {
+        background-color: white;
+        padding: 1rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .logout-btn {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f8f9fa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Academic Portal</h2>
+      <div class="nav-item">Dashboard</div>
+      <div class="nav-item">My Courses</div>
+      <div class="nav-item">Grades</div>
+      <div class="nav-item">Profile</div>
+    </div>
+
+    <div class="main-content">
+      <div class="header">
+        <h3>Student Dashboard</h3>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+
+      <div class="card">
+        <h4>My Information</h4>
+        <div id="userInfo">
+          <p>Loading user information...</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>My Courses</h4>
+        <table id="coursesTable">
+          <thead>
+            <tr>
+              <th>Course Code</th>
+              <th>Course Name</th>
+              <th>SKS</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4">Loading courses...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      // Check authentication
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/login.html";
+      }
+
+      // Logout functionality
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("token");
+        window.location.href = "/login.html";
+      });
+
+      // Fetch user data
+      async function fetchUserData() {
+        try {
+          // Get user profile
+          const profileResponse = await fetch("/api/me", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!profileResponse.ok) {
+            throw new Error("Failed to fetch profile");
+          }
+
+          const profile = await profileResponse.json();
+
+          // Display user info
+          document.getElementById("userInfo").innerHTML = `
+                    <p><strong>Name:</strong> ${profile.name}</p>
+                    <p><strong>Email:</strong> ${profile.email}</p>
+                    <p><strong>Role:</strong> ${profile.role}</p>
+                `;
+
+          // Get user courses (this would be a separate endpoint in your API)
+          const coursesResponse = await fetch("/api/mahasiswa/matkul", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (coursesResponse.ok) {
+            const courses = await coursesResponse.json();
+            const tableBody = document.querySelector("#coursesTable tbody");
+            tableBody.innerHTML = "";
+
+            courses.forEach((course) => {
+              const row = document.createElement("tr");
+              row.innerHTML = `
+                            <td>${course.kode}</td>
+                            <td>${course.nama}</td>
+                            <td>${course.sks}</td>
+                            <td>${course.nilai || "-"}</td>
+                        `;
+              tableBody.appendChild(row);
+            });
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      }
+
+      fetchUserData();
+    </script>
+  </body>
+</html>

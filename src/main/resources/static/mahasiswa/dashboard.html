@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mahasiswa Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+      }
+      .sidebar {
+        width: 250px;
+        background-color: #27ae60;
+        color: white;
+        height: 100vh;
+        position: fixed;
+        padding: 1rem;
+      }
+      .main-content {
+        margin-left: 250px;
+        padding: 1rem;
+      }
+      .nav-item {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .nav-item:hover,
+      .nav-item.active {
+        background-color: #229954;
+      }
+      .header {
+        background-color: white;
+        padding: 1rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0.25rem;
+      }
+      .btn:hover {
+        background-color: #2980b9;
+      }
+      .btn-danger {
+        background-color: #e74c3c;
+      }
+      .btn-danger:hover {
+        background-color: #c0392b;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f8f9fa;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+      .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 400px;
+      }
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .section {
+        display: none;
+      }
+      .section.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Portal Mahasiswa</h2>
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('courses')">
+        Mata Kuliah Saya
+      </div>
+      <div class="nav-item" onclick="showSection('available-courses')">
+        Ambil Mata Kuliah
+      </div>
+      <div class="nav-item" onclick="showSection('profile')">Profil Saya</div>
+    </div>
+
+    <div class="main-content">
+      <div class="header">
+        <h3 id="pageTitle">Dashboard Mahasiswa</h3>
+        <button class="btn btn-danger" onclick="logout()">Logout</button>
+      </div>
+
+      <!-- Dashboard Section -->
+      <div id="dashboard" class="section active">
+        <div class="card">
+          <h4>Informasi Mahasiswa</h4>
+          <div id="studentInfo">
+            <p>Loading...</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>Ringkasan Akademik</h4>
+          <div id="academicSummary">
+            <p>Total SKS Diambil: <span id="totalSKS">0</span></p>
+            <p>Mata Kuliah Aktif: <span id="activeCourses">0</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Courses Section -->
+      <div id="courses" class="section">
+        <div class="card">
+          <h4>Mata Kuliah Yang Diambil</h4>
+          <table id="myCoursesTable">
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Nama Mata Kuliah</th>
+                <th>SKS</th>
+                <th>Semester</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="5">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Available Courses Section -->
+      <div id="available-courses" class="section">
+        <div class="card">
+          <h4>Mata Kuliah Tersedia</h4>
+          <table id="availableCoursesTable">
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Nama Mata Kuliah</th>
+                <th>SKS</th>
+                <th>Semester</th>
+                <th>Deskripsi</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="6">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Profile Section -->
+      <div id="profile" class="section">
+        <div class="card">
+          <h4>Profil Mahasiswa</h4>
+          <div id="profileInfo">
+            <p>Loading...</p>
+          </div>
+          <button class="btn" onclick="editProfile()">Edit Profil</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Take Course Modal -->
+    <div id="takeCourseModal" class="modal">
+      <div class="modal-content">
+        <h4>Konfirmasi Ambil Mata Kuliah</h4>
+        <p id="courseConfirmText"></p>
+        <button class="btn" onclick="confirmTakeCourse()">Ya, Ambil</button>
+        <button class="btn btn-danger" onclick="closeTakeCourseModal()">
+          Batal
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/login.html";
+      }
+
+      let currentStudentId = null;
+      let selectedCourseCode = null;
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
+      // Navigation
+      function showSection(sectionId) {
+        // Hide all sections
+        document.querySelectorAll(".section").forEach((section) => {
+          section.classList.remove("active");
+        });
+
+        // Remove active from nav items
+        document.querySelectorAll(".nav-item").forEach((item) => {
+          item.classList.remove("active");
+        });
+
+        // Show selected section
+        document.getElementById(sectionId).classList.add("active");
+        event.target.classList.add("active");
+
+        // Update page title
+        const titles = {
+          dashboard: "Dashboard Mahasiswa",
+          courses: "Mata Kuliah Saya",
+          "available-courses": "Ambil Mata Kuliah",
+          profile: "Profil Saya",
+        };
+        document.getElementById("pageTitle").textContent = titles[sectionId];
+
+        // Load section data
+        switch (sectionId) {
+          case "courses":
+            loadMyCourses();
+            break;
+          case "available-courses":
+            loadAvailableCourses();
+            break;
+          case "profile":
+            loadProfile();
+            break;
+        }
+      }
+
+      // Load student info
+      async function loadStudentInfo() {
+        try {
+          const response = await fetch("/api/me", { headers });
+          if (response.ok) {
+            const user = await response.json();
+            currentStudentId = user.id;
+
+            // Try to get detailed student info
+            const studentResponse = await fetch(`/api/mahasiswa/${user.id}`, {
+              headers,
+            });
+            if (studentResponse.ok) {
+              const student = await studentResponse.json();
+              document.getElementById("studentInfo").innerHTML = `
+                            <p><strong>Nama:</strong> ${student.nama}</p>
+                            <p><strong>NIM:</strong> ${student.nim}</p>
+                            <p><strong>Email:</strong> ${student.email}</p>
+                            <p><strong>Program Studi:</strong> ${student.programStudi}</p>
+                            <p><strong>Semester:</strong> ${student.semester}</p>
+                        `;
+            } else {
+              document.getElementById("studentInfo").innerHTML = `
+                            <p><strong>Nama:</strong> ${user.name}</p>
+                            <p><strong>Email:</strong> ${user.email}</p>
+                            <p><strong>Role:</strong> ${user.role}</p>
+                        `;
+            }
+          }
+        } catch (error) {
+          console.error("Error loading student info:", error);
+        }
+      }
+
+      // Load my courses
+      async function loadMyCourses() {
+        try {
+          // This would need to be implemented in the backend
+          // For now, show placeholder
+          document.querySelector("#myCoursesTable tbody").innerHTML = `
+                    <tr><td colspan="5">Belum ada mata kuliah yang diambil</td></tr>
+                `;
+        } catch (error) {
+          console.error("Error loading courses:", error);
+        }
+      }
+
+      // Load available courses
+      async function loadAvailableCourses() {
+        try {
+          const response = await fetch("/api/matakuliah", { headers });
+          if (response.ok) {
+            const courses = await response.json();
+            const tbody = document.querySelector(
+              "#availableCoursesTable tbody"
+            );
+
+            if (courses.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="6">Tidak ada mata kuliah tersedia</td></tr>';
+              return;
+            }
+
+            tbody.innerHTML = courses
+              .map(
+                (course) => `
+                        <tr>
+                            <td>${course.kode}</td>
+                            <td>${course.nama}</td>
+                            <td>${course.sks}</td>
+                            <td>${course.semester}</td>
+                            <td>${course.deskripsi || "-"}</td>
+                            <td>
+                                <button class="btn" onclick="takeCourse('${
+                                  course.kode
+                                }', '${course.nama}', ${course.sks})">
+                                    Ambil
+                                </button>
+                            </td>
+                        </tr>
+                    `
+              )
+              .join("");
+          }
+        } catch (error) {
+          console.error("Error loading available courses:", error);
+        }
+      }
+
+      // Take course
+      function takeCourse(kode, nama, sks) {
+        selectedCourseCode = kode;
+        document.getElementById(
+          "courseConfirmText"
+        ).textContent = `Apakah Anda yakin ingin mengambil mata kuliah "${nama}" (${sks} SKS)?`;
+        document.getElementById("takeCourseModal").style.display = "block";
+      }
+
+      async function confirmTakeCourse() {
+        if (!currentStudentId || !selectedCourseCode) return;
+
+        try {
+          const response = await fetch(
+            `/api/mahasiswa/${currentStudentId}/matkul`,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ kode: selectedCourseCode }),
+            }
+          );
+
+          if (response.ok) {
+            alert("Mata kuliah berhasil diambil!");
+            loadAvailableCourses();
+            loadMyCourses();
+          } else {
+            const error = await response.text();
+            alert("Gagal mengambil mata kuliah: " + error);
+          }
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+
+        closeTakeCourseModal();
+      }
+
+      function closeTakeCourseModal() {
+        document.getElementById("takeCourseModal").style.display = "none";
+        selectedCourseCode = null;
+      }
+
+      // Load profile
+      function loadProfile() {
+        loadStudentInfo().then(() => {
+          document.getElementById("profileInfo").innerHTML =
+            document.getElementById("studentInfo").innerHTML;
+        });
+      }
+
+      function editProfile() {
+        alert("Fitur edit profil akan segera tersedia");
+      }
+
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "/login.html";
+      }
+
+      // Initialize
+      loadStudentInfo();
+    </script>
+  </body>
+</html>

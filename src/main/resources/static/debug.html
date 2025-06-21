@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug - Academic System</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 2rem;
+        background-color: #f4f4f9;
+      }
+      .debug-container {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0.5rem;
+      }
+      .result {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 1rem 0;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="debug-container">
+      <h2>Debug Academic System</h2>
+
+      <button class="btn" onclick="testLogin()">Test Login</button>
+      <button class="btn" onclick="testProfile()">Test Profile</button>
+      <button class="btn" onclick="testAPI()">Test All APIs</button>
+      <button class="btn" onclick="clearStorage()">Clear Storage</button>
+
+      <div id="result" class="result">
+        Click buttons above to test the system...
+      </div>
+    </div>
+
+    <script>
+      const resultDiv = document.getElementById("result");
+
+      function log(message) {
+        resultDiv.textContent +=
+          new Date().toLocaleTimeString() + ": " + message + "\n";
+      }
+
+      function clearLog() {
+        resultDiv.textContent = "";
+      }
+
+      async function testLogin() {
+        clearLog();
+        log("Testing login...");
+
+        try {
+          const response = await fetch("/api/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: "test@example.com",
+              password: "test123",
+            }),
+          });
+
+          log("Login response status: " + response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            log(
+              "Login successful! Token: " + data.token.substring(0, 20) + "..."
+            );
+            localStorage.setItem("token", data.token);
+          } else {
+            const error = await response.text();
+            log("Login failed: " + error);
+          }
+        } catch (error) {
+          log("Login error: " + error.message);
+        }
+      }
+
+      async function testProfile() {
+        clearLog();
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          log("No token found. Please login first.");
+          return;
+        }
+
+        log("Testing profile with token...");
+
+        try {
+          const response = await fetch("/api/me", {
+            headers: {
+              Authorization: "Bearer " + token,
+            },
+          });
+
+          log("Profile response status: " + response.status);
+
+          if (response.ok) {
+            const profile = await response.json();
+            log("Profile data: " + JSON.stringify(profile, null, 2));
+          } else {
+            const error = await response.text();
+            log("Profile failed: " + error);
+          }
+        } catch (error) {
+          log("Profile error: " + error.message);
+        }
+      }
+
+      async function testAPI() {
+        clearLog();
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          log("No token found. Please login first.");
+          return;
+        }
+
+        const headers = {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        };
+
+        // Test all endpoints
+        const endpoints = [
+          { name: "Students", url: "/api/mahasiswa" },
+          { name: "Lecturers", url: "/api/dosen" },
+          { name: "Courses", url: "/api/matakuliah" },
+        ];
+
+        for (const endpoint of endpoints) {
+          try {
+            log(`Testing ${endpoint.name}...`);
+            const response = await fetch(endpoint.url, { headers });
+            log(`${endpoint.name} status: ${response.status}`);
+
+            if (response.ok) {
+              const data = await response.json();
+              log(`${endpoint.name} count: ${data.length}`);
+            } else {
+              const error = await response.text();
+              log(`${endpoint.name} error: ${error}`);
+            }
+          } catch (error) {
+            log(`${endpoint.name} exception: ${error.message}`);
+          }
+        }
+      }
+
+      function clearStorage() {
+        localStorage.clear();
+        log("Local storage cleared.");
+      }
+
+      // Show current token status
+      window.onload = function () {
+        const token = localStorage.getItem("token");
+        if (token) {
+          log("Current token: " + token.substring(0, 20) + "...");
+        } else {
+          log("No token found in storage.");
+        }
+      };
+    </script>
+  </body>
+</html>

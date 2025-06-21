@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dosen Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+      }
+      .sidebar {
+        width: 250px;
+        background-color: #8e44ad;
+        color: white;
+        height: 100vh;
+        position: fixed;
+        padding: 1rem;
+      }
+      .main-content {
+        margin-left: 250px;
+        padding: 1rem;
+      }
+      .nav-item {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .nav-item:hover,
+      .nav-item.active {
+        background-color: #7d3c98;
+      }
+      .header {
+        background-color: white;
+        padding: 1rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0.25rem;
+      }
+      .btn:hover {
+        background-color: #2980b9;
+      }
+      .btn-danger {
+        background-color: #e74c3c;
+      }
+      .btn-danger:hover {
+        background-color: #c0392b;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f8f9fa;
+      }
+      .section {
+        display: none;
+      }
+      .section.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Portal Dosen</h2>
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('students')">
+        Mahasiswa Bimbingan
+      </div>
+      <div class="nav-item" onclick="showSection('all-students')">
+        Semua Mahasiswa
+      </div>
+      <div class="nav-item" onclick="showSection('profile')">Profil Saya</div>
+    </div>
+
+    <div class="main-content">
+      <div class="header">
+        <h3 id="pageTitle">Dashboard Dosen</h3>
+        <button class="btn btn-danger" onclick="logout()">Logout</button>
+      </div>
+
+      <!-- Dashboard Section -->
+      <div id="dashboard" class="section active">
+        <div class="card">
+          <h4>Informasi Dosen</h4>
+          <div id="dosenInfo">
+            <p>Loading...</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>Statistik Bimbingan</h4>
+          <div id="bimbinganStats">
+            <p>Total Mahasiswa Bimbingan: <span id="totalBimbingan">0</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Students Section -->
+      <div id="students" class="section">
+        <div class="card">
+          <h4>Mahasiswa Bimbingan</h4>
+          <table id="bimbinganTable">
+            <thead>
+              <tr>
+                <th>NIM</th>
+                <th>Nama</th>
+                <th>Program Studi</th>
+                <th>Semester</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="5">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- All Students Section -->
+      <div id="all-students" class="section">
+        <div class="card">
+          <h4>Semua Mahasiswa</h4>
+          <table id="allStudentsTable">
+            <thead>
+              <tr>
+                <th>NIM</th>
+                <th>Nama</th>
+                <th>Program Studi</th>
+                <th>Semester</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="5">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Profile Section -->
+      <div id="profile" class="section">
+        <div class="card">
+          <h4>Profil Dosen</h4>
+          <div id="profileInfo">
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/login.html";
+      }
+
+      let currentDosenId = null;
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
+      // Navigation
+      function showSection(sectionId) {
+        document.querySelectorAll(".section").forEach((section) => {
+          section.classList.remove("active");
+        });
+
+        document.querySelectorAll(".nav-item").forEach((item) => {
+          item.classList.remove("active");
+        });
+
+        document.getElementById(sectionId).classList.add("active");
+        event.target.classList.add("active");
+
+        const titles = {
+          dashboard: "Dashboard Dosen",
+          students: "Mahasiswa Bimbingan",
+          "all-students": "Semua Mahasiswa",
+          profile: "Profil Saya",
+        };
+        document.getElementById("pageTitle").textContent = titles[sectionId];
+
+        switch (sectionId) {
+          case "students":
+            loadBimbinganStudents();
+            break;
+          case "all-students":
+            loadAllStudents();
+            break;
+          case "profile":
+            loadProfile();
+            break;
+        }
+      }
+
+      // Load dosen info
+      async function loadDosenInfo() {
+        try {
+          const response = await fetch("/api/me", { headers });
+          if (response.ok) {
+            const user = await response.json();
+            currentDosenId = user.id;
+
+            // Try to get detailed dosen info
+            const dosenResponse = await fetch(`/api/dosen/${user.id}`, {
+              headers,
+            });
+            if (dosenResponse.ok) {
+              const dosen = await dosenResponse.json();
+              document.getElementById("dosenInfo").innerHTML = `
+                            <p><strong>Nama:</strong> ${dosen.nama}</p>
+                            <p><strong>NIDN:</strong> ${dosen.nidn}</p>
+                            <p><strong>Email:</strong> ${dosen.email}</p>
+                            <p><strong>Departemen:</strong> ${dosen.departemen}</p>
+                            <p><strong>Telepon:</strong> ${dosen.telepon}</p>
+                        `;
+            } else {
+              document.getElementById("dosenInfo").innerHTML = `
+                            <p><strong>Nama:</strong> ${user.name}</p>
+                            <p><strong>Email:</strong> ${user.email}</p>
+                            <p><strong>Role:</strong> ${user.role}</p>
+                        `;
+            }
+          }
+        } catch (error) {
+          console.error("Error loading dosen info:", error);
+        }
+      }
+
+      // Load bimbingan students
+      async function loadBimbinganStudents() {
+        document.querySelector("#bimbinganTable tbody").innerHTML =
+          '<tr><td colspan="5">Belum ada mahasiswa bimbingan</td></tr>';
+      }
+
+      // Load all students
+      async function loadAllStudents() {
+        try {
+          const response = await fetch("/api/mahasiswa", { headers });
+          if (response.ok) {
+            const students = await response.json();
+            const tbody = document.querySelector("#allStudentsTable tbody");
+
+            if (students.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="5">Tidak ada data mahasiswa</td></tr>';
+              return;
+            }
+
+            tbody.innerHTML = students
+              .map(
+                (student) => `
+                        <tr>
+                            <td>${student.nim}</td>
+                            <td>${student.nama}</td>
+                            <td>${student.programStudi}</td>
+                            <td>${student.semester}</td>
+                            <td>
+                                <button class="btn" onclick="addToBimbingan('${student.id}')">
+                                    Tambah Bimbingan
+                                </button>
+                            </td>
+                        </tr>
+                    `
+              )
+              .join("");
+          }
+        } catch (error) {
+          console.error("Error loading students:", error);
+        }
+      }
+
+      // Add to bimbingan
+      async function addToBimbingan(studentId) {
+        if (!currentDosenId) return;
+
+        try {
+          const response = await fetch(
+            `/api/dosen/${currentDosenId}/bimbingan/${studentId}`,
+            {
+              method: "POST",
+              headers,
+            }
+          );
+
+          if (response.ok) {
+            alert("Mahasiswa berhasil ditambahkan ke bimbingan!");
+            loadBimbinganStudents();
+          } else {
+            alert("Gagal menambahkan mahasiswa ke bimbingan");
+          }
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+      }
+
+      function loadProfile() {
+        loadDosenInfo().then(() => {
+          document.getElementById("profileInfo").innerHTML =
+            document.getElementById("dosenInfo").innerHTML;
+        });
+      }
+
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "/login.html";
+      }
+
+      // Initialize
+      loadDosenInfo();
+    </script>
+  </body>
+</html>

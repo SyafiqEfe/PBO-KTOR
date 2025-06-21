@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+      }
+      .sidebar {
+        width: 250px;
+        background-color: #2c3e50;
+        color: white;
+        height: 100vh;
+        position: fixed;
+        padding: 1rem;
+      }
+      .main-content {
+        margin-left: 250px;
+        padding: 1rem;
+      }
+      .nav-item {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .nav-item:hover,
+      .nav-item.active {
+        background-color: #34495e;
+      }
+      .header {
+        background-color: white;
+        padding: 1rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0.25rem;
+      }
+      .btn:hover {
+        background-color: #2980b9;
+      }
+      .btn-danger {
+        background-color: #e74c3c;
+      }
+      .btn-danger:hover {
+        background-color: #c0392b;
+      }
+      .btn-success {
+        background-color: #27ae60;
+      }
+      .btn-success:hover {
+        background-color: #229954;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f8f9fa;
+      }
+      .section {
+        display: none;
+      }
+      .section.active {
+        display: block;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .stat-card {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+      .modal-content {
+        background-color: white;
+        margin: 5% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Admin Panel</h2>
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('students')">
+        Kelola Mahasiswa
+      </div>
+      <div class="nav-item" onclick="showSection('lecturers')">
+        Kelola Dosen
+      </div>
+      <div class="nav-item" onclick="showSection('courses')">
+        Kelola Mata Kuliah
+      </div>
+      <div class="nav-item" onclick="showSection('reports')">Laporan</div>
+    </div>
+
+    <div class="main-content">
+      <div class="header">
+        <h3 id="pageTitle">Admin Dashboard</h3>
+        <button class="btn btn-danger" onclick="logout()">Logout</button>
+      </div>
+
+      <!-- Dashboard Section -->
+      <div id="dashboard" class="section active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="totalStudents">0</div>
+            <div>Total Mahasiswa</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="totalLecturers">0</div>
+            <div>Total Dosen</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="totalCourses">0</div>
+            <div>Total Mata Kuliah</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Students Management Section -->
+      <div id="students" class="section">
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 1rem;
+            "
+          >
+            <h4>Kelola Mahasiswa</h4>
+            <button class="btn btn-success" onclick="showAddStudentModal()">
+              Tambah Mahasiswa
+            </button>
+          </div>
+          <table id="studentsTable">
+            <thead>
+              <tr>
+                <th>NIM</th>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Program Studi</th>
+                <th>Semester</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="6">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Lecturers Management Section -->
+      <div id="lecturers" class="section">
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 1rem;
+            "
+          >
+            <h4>Kelola Dosen</h4>
+            <button class="btn btn-success" onclick="showAddLecturerModal()">
+              Tambah Dosen
+            </button>
+          </div>
+          <table id="lecturersTable">
+            <thead>
+              <tr>
+                <th>NIDN</th>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Departemen</th>
+                <th>Telepon</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="6">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Courses Management Section -->
+      <div id="courses" class="section">
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 1rem;
+            "
+          >
+            <h4>Kelola Mata Kuliah</h4>
+            <button class="btn btn-success" onclick="showAddCourseModal()">
+              Tambah Mata Kuliah
+            </button>
+          </div>
+          <table id="coursesTable">
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Nama</th>
+                <th>SKS</th>
+                <th>Semester</th>
+                <th>Deskripsi</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="6">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Reports Section -->
+      <div id="reports" class="section">
+        <div class="card">
+          <h4>Laporan Sistem</h4>
+          <p>Fitur laporan akan segera tersedia</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div id="addStudentModal" class="modal">
+      <div class="modal-content">
+        <h4>Tambah Mahasiswa Baru</h4>
+        <form id="addStudentForm">
+          <div class="form-group">
+            <label>Nama</label>
+            <input type="text" id="studentNama" required />
+          </div>
+          <div class="form-group">
+            <label>NIM</label>
+            <input type="text" id="studentNim" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="studentEmail" required />
+          </div>
+          <div class="form-group">
+            <label>Telepon</label>
+            <input type="text" id="studentTelepon" required />
+          </div>
+          <div class="form-group">
+            <label>Program Studi</label>
+            <input type="text" id="studentProdi" required />
+          </div>
+          <div class="form-group">
+            <label>Semester</label>
+            <select id="studentSemester" required>
+              <option value="">Pilih Semester</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-success">Simpan</button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            onclick="closeModal('addStudentModal')"
+          >
+            Batal
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Lecturer Modal -->
+    <div id="addLecturerModal" class="modal">
+      <div class="modal-content">
+        <h4>Tambah Dosen Baru</h4>
+        <form id="addLecturerForm">
+          <div class="form-group">
+            <label>Nama</label>
+            <input type="text" id="lecturerNama" required />
+          </div>
+          <div class="form-group">
+            <label>NIDN</label>
+            <input type="text" id="lecturerNidn" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="lecturerEmail" required />
+          </div>
+          <div class="form-group">
+            <label>Telepon</label>
+            <input type="text" id="lecturerTelepon" required />
+          </div>
+          <div class="form-group">
+            <label>Departemen</label>
+            <input type="text" id="lecturerDepartemen" required />
+          </div>
+          <button type="submit" class="btn btn-success">Simpan</button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            onclick="closeModal('addLecturerModal')"
+          >
+            Batal
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Course Modal -->
+    <div id="addCourseModal" class="modal">
+      <div class="modal-content">
+        <h4>Tambah Mata Kuliah Baru</h4>
+        <form id="addCourseForm">
+          <div class="form-group">
+            <label>Kode Mata Kuliah</label>
+            <input type="text" id="courseKode" required />
+          </div>
+          <div class="form-group">
+            <label>Nama Mata Kuliah</label>
+            <input type="text" id="courseNama" required />
+          </div>
+          <div class="form-group">
+            <label>SKS</label>
+            <select id="courseSks" required>
+              <option value="">Pilih SKS</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Semester</label>
+            <select id="courseSemester" required>
+              <option value="">Pilih Semester</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Deskripsi</label>
+            <textarea id="courseDeskripsi" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-success">Simpan</button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            onclick="closeModal('addCourseModal')"
+          >
+            Batal
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/login.html";
+      }
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
+      // Navigation
+      function showSection(sectionId) {
+        document.querySelectorAll(".section").forEach((section) => {
+          section.classList.remove("active");
+        });
+
+        document.querySelectorAll(".nav-item").forEach((item) => {
+          item.classList.remove("active");
+        });
+
+        document.getElementById(sectionId).classList.add("active");
+        event.target.classList.add("active");
+
+        const titles = {
+          dashboard: "Admin Dashboard",
+          students: "Kelola Mahasiswa",
+          lecturers: "Kelola Dosen",
+          courses: "Kelola Mata Kuliah",
+          reports: "Laporan",
+        };
+        document.getElementById("pageTitle").textContent = titles[sectionId];
+
+        switch (sectionId) {
+          case "dashboard":
+            loadDashboardStats();
+            break;
+          case "students":
+            loadStudents();
+            break;
+          case "lecturers":
+            loadLecturers();
+            break;
+          case "courses":
+            loadCourses();
+            break;
+        }
+      }
+
+      // Load dashboard statistics
+      async function loadDashboardStats() {
+        try {
+          const [studentsRes, lecturersRes, coursesRes] = await Promise.all([
+            fetch("/api/mahasiswa", { headers }),
+            fetch("/api/dosen", { headers }),
+            fetch("/api/matakuliah", { headers }),
+          ]);
+
+          const students = studentsRes.ok ? await studentsRes.json() : [];
+          const lecturers = lecturersRes.ok ? await lecturersRes.json() : [];
+          const courses = coursesRes.ok ? await coursesRes.json() : [];
+
+          document.getElementById("totalStudents").textContent =
+            students.length;
+          document.getElementById("totalLecturers").textContent =
+            lecturers.length;
+          document.getElementById("totalCourses").textContent = courses.length;
+        } catch (error) {
+          console.error("Error loading stats:", error);
+        }
+      }
+
+      // Load students
+      async function loadStudents() {
+        try {
+          const response = await fetch("/api/mahasiswa", { headers });
+          if (response.ok) {
+            const students = await response.json();
+            const tbody = document.querySelector("#studentsTable tbody");
+
+            if (students.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="6">Tidak ada data mahasiswa</td></tr>';
+              return;
+            }
+
+            tbody.innerHTML = students
+              .map(
+                (student) => `
+                        <tr>
+                            <td>${student.nim}</td>
+                            <td>${student.nama}</td>
+                            <td>${student.email}</td>
+                            <td>${student.programStudi}</td>
+                            <td>${student.semester}</td>
+                            <td>
+                                <button class="btn" onclick="editStudent('${student.id}')">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">Hapus</button>
+                            </td>
+                        </tr>
+                    `
+              )
+              .join("");
+          }
+        } catch (error) {
+          console.error("Error loading students:", error);
+        }
+      }
+
+      // Load lecturers
+      async function loadLecturers() {
+        try {
+          const response = await fetch("/api/dosen", { headers });
+          if (response.ok) {
+            const lecturers = await response.json();
+            const tbody = document.querySelector("#lecturersTable tbody");
+
+            if (lecturers.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="6">Tidak ada data dosen</td></tr>';
+              return;
+            }
+
+            tbody.innerHTML = lecturers
+              .map(
+                (lecturer) => `
+                        <tr>
+                            <td>${lecturer.nidn}</td>
+                            <td>${lecturer.nama}</td>
+                            <td>${lecturer.email}</td>
+                            <td>${lecturer.departemen}</td>
+                            <td>${lecturer.telepon}</td>
+                            <td>
+                                <button class="btn" onclick="editLecturer('${lecturer.id}')">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteLecturer('${lecturer.id}')">Hapus</button>
+                            </td>
+                        </tr>
+                    `
+              )
+              .join("");
+          }
+        } catch (error) {
+          console.error("Error loading lecturers:", error);
+        }
+      }
+
+      // Load courses
+      async function loadCourses() {
+        try {
+          const response = await fetch("/api/matakuliah", { headers });
+          if (response.ok) {
+            const courses = await response.json();
+            const tbody = document.querySelector("#coursesTable tbody");
+
+            if (courses.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="6">Tidak ada data mata kuliah</td></tr>';
+              return;
+            }
+
+            tbody.innerHTML = courses
+              .map(
+                (course) => `
+                        <tr>
+                            <td>${course.kode}</td>
+                            <td>${course.nama}</td>
+                            <td>${course.sks}</td>
+                            <td>${course.semester}</td>
+                            <td>${course.deskripsi || "-"}</td>
+                            <td>
+                                <button class="btn" onclick="editCourse('${
+                                  course.kode
+                                }')">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteCourse('${
+                                  course.kode
+                                }')">Hapus</button>
+                            </td>
+                        </tr>
+                    `
+              )
+              .join("");
+          }
+        } catch (error) {
+          console.error("Error loading courses:", error);
+        }
+      }
+
+      // Modal functions
+      function showAddStudentModal() {
+        document.getElementById("addStudentModal").style.display = "block";
+      }
+
+      function showAddLecturerModal() {
+        document.getElementById("addLecturerModal").style.display = "block";
+      }
+
+      function showAddCourseModal() {
+        document.getElementById("addCourseModal").style.display = "block";
+      }
+
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+      }
+
+      // Form submissions
+      document
+        .getElementById("addStudentForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const studentData = {
+            nama: document.getElementById("studentNama").value,
+            nim: document.getElementById("studentNim").value,
+            email: document.getElementById("studentEmail").value,
+            telepon: document.getElementById("studentTelepon").value,
+            programStudi: document.getElementById("studentProdi").value,
+            semester: parseInt(
+              document.getElementById("studentSemester").value
+            ),
+          };
+
+          try {
+            const response = await fetch("/api/mahasiswa", {
+              method: "POST",
+              headers,
+              body: JSON.stringify(studentData),
+            });
+
+            if (response.ok) {
+              alert("Mahasiswa berhasil ditambahkan!");
+              closeModal("addStudentModal");
+              loadStudents();
+              document.getElementById("addStudentForm").reset();
+            } else {
+              const error = await response.text();
+              alert("Gagal menambahkan mahasiswa: " + error);
+            }
+          } catch (error) {
+            alert("Error: " + error.message);
+          }
+        });
+
+      document
+        .getElementById("addLecturerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const lecturerData = {
+            nama: document.getElementById("lecturerNama").value,
+            nidn: document.getElementById("lecturerNidn").value,
+            email: document.getElementById("lecturerEmail").value,
+            telepon: document.getElementById("lecturerTelepon").value,
+            departemen: document.getElementById("lecturerDepartemen").value,
+          };
+
+          try {
+            const response = await fetch("/api/dosen", {
+              method: "POST",
+              headers,
+              body: JSON.stringify(lecturerData),
+            });
+
+            if (response.ok) {
+              alert("Dosen berhasil ditambahkan!");
+              closeModal("addLecturerModal");
+              loadLecturers();
+              document.getElementById("addLecturerForm").reset();
+            } else {
+              const error = await response.text();
+              alert("Gagal menambahkan dosen: " + error);
+            }
+          } catch (error) {
+            alert("Error: " + error.message);
+          }
+        });
+
+      document
+        .getElementById("addCourseForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const courseData = {
+            kode: document.getElementById("courseKode").value,
+            nama: document.getElementById("courseNama").value,
+            sks: parseInt(document.getElementById("courseSks").value),
+            semester: parseInt(document.getElementById("courseSemester").value),
+            deskripsi: document.getElementById("courseDeskripsi").value,
+          };
+
+          try {
+            const response = await fetch("/api/matakuliah", {
+              method: "POST",
+              headers,
+              body: JSON.stringify(courseData),
+            });
+
+            if (response.ok) {
+              alert("Mata kuliah berhasil ditambahkan!");
+              closeModal("addCourseModal");
+              loadCourses();
+              document.getElementById("addCourseForm").reset();
+            } else {
+              const error = await response.text();
+              alert("Gagal menambahkan mata kuliah: " + error);
+            }
+          } catch (error) {
+            alert("Error: " + error.message);
+          }
+        });
+
+      // Delete functions
+      async function deleteStudent(id) {
+        if (confirm("Apakah Anda yakin ingin menghapus mahasiswa ini?")) {
+          try {
+            const response = await fetch(`/api/mahasiswa/${id}`, {
+              method: "DELETE",
+              headers,
+            });
+
+            if (response.ok) {
+              alert("Mahasiswa berhasil dihapus!");
+              loadStudents();
+            } else {
+              alert("Gagal menghapus mahasiswa");
+            }
+          } catch (error) {
+            alert("Error: " + error.message);
+          }
+        }
+      }
+
+      async function deleteLecturer(id) {
+        if (confirm("Apakah Anda yakin ingin menghapus dosen ini?")) {
+          try {
+            const response = await fetch(`/api/dosen/${id}`, {
+              method: "DELETE",
+              headers,
+            });
+
+            if (response.ok) {
+              alert("Dosen berhasil dihapus!");
+              loadLecturers();
+            } else {
+              alert("Gagal menghapus dosen");
+            }
+          } catch (error) {
+            alert("Error: " + error.message);
+          }
+        }
+      }
+
+      async function deleteCourse(kode) {
+        if (confirm("Apakah Anda yakin ingin menghapus mata kuliah ini?")) {
+          try {
+            const response = await fetch(`/api/matakuliah/${kode}`, {
+              method: "DELETE",
+              headers,
+            });
+
+            if (response.ok) {
+              alert("Mata kuliah berhasil dihapus!");
+              loadCourses();
+            } else {
+              alert("Gagal menghapus mata kuliah");
+            }
+          } catch (error) {
+            alert("Error: " + error.message);
+          }
+        }
+      }
+
+      // Edit functions (placeholder)
+      function editStudent(id) {
+        alert("Fitur edit mahasiswa akan segera tersedia");
+      }
+
+      function editLecturer(id) {
+        alert("Fitur edit dosen akan segera tersedia");
+      }
+
+      function editCourse(kode) {
+        alert("Fitur edit mata kuliah akan segera tersedia");
+      }
+
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "/login.html";
+      }
+
+      // Initialize
+      loadDashboardStats();
+    </script>
+  </body>
+</html>
