@@ -1,22 +1,26 @@
 package academic.controllers
 
-import academic.models.*
-import academic.dtos.*
-import academic.repositories.*
-import academic.exceptions.AcademicException
+import academic.dtos.MataKuliahCreateRequest
+import academic.dtos.MataKuliahUpdateRequest
+import academic.models.MataKuliah
+import academic.services.MataKuliahService
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
-import java.util.UUID
 
-class MataKuliahController(private val repo: MataKuliahRepository) {
+class MataKuliahController(private val service: MataKuliahService) {
     suspend fun getAll(call: ApplicationCall) {
-        call.respond(repo.getAll())
+        call.respond(service.getAll())
     }
 
     suspend fun getByKode(call: ApplicationCall) {
-        val kode = call.parameters["kode"] ?: throw AcademicException("Kode required")
-        call.respond(repo.getByKode(kode) ?: throw AcademicException("Mata kuliah not found"))
+        val kode = call.parameters["kode"]!!
+        val matkul = service.getByKode(kode)
+        if (matkul != null) {
+            call.respond(matkul)
+        } else {
+            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Mata kuliah not found")
+        }
     }
 
     suspend fun create(call: ApplicationCall) {
@@ -28,20 +32,29 @@ class MataKuliahController(private val repo: MataKuliahRepository) {
             semester = request.semester,
             deskripsi = request.deskripsi
         )
-        repo.create(matkul)
-        call.respond(mapOf("message" to "Mata kuliah created"))
+        call.respond(service.create(matkul))
     }
 
     suspend fun update(call: ApplicationCall) {
-        val kode = call.parameters["kode"] ?: throw AcademicException("Kode required")
+        val kode = call.parameters["kode"]!!
         val request = call.receive<MataKuliahUpdateRequest>()
-        repo.update(kode, request)
-        call.respond(mapOf("message" to "Mata kuliah updated"))
+        val existing = service.getByKode(kode) ?: run {
+            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Mata kuliah not found")
+            return
+        }
+        
+        val updated = MataKuliah(
+            kode = existing.kode,
+            nama = request.nama ?: existing.nama,
+            sks = request.sks ?: existing.sks,
+            semester = request.semester ?: existing.semester,
+            deskripsi = request.deskripsi ?: existing.deskripsi
+        )
+        call.respond(service.update(kode, updated))
     }
 
     suspend fun delete(call: ApplicationCall) {
-        val kode = call.parameters["kode"] ?: throw AcademicException("Kode required")
-        repo.delete(kode)
-        call.respond(mapOf("message" to "Mata kuliah deleted"))
+        val kode = call.parameters["kode"]!!
+        call.respond(service.delete(kode))
     }
 }

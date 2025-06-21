@@ -6,7 +6,7 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseFactory {
-    fun initDatabase() {
+    fun init() {
         Database.connect("jdbc:sqlite:data.db", driver = "org.sqlite.JDBC")
         transaction {
             SchemaUtils.create(
@@ -15,7 +15,8 @@ object DatabaseFactory {
                 DosenTable,
                 MataKuliahTable,
                 MahasiswaMatkulTable,
-                BimbinganTable
+                BimbinganTable,
+                DosenBimbinganTable
             )
         }
     }

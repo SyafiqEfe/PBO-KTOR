@@ -1,70 +1,75 @@
 package academic.controllers
 
-import academic.models.*
-import academic.dtos.*
-import academic.repositories.*
-import academic.exceptions.AcademicException
+import academic.dtos.DosenCreateRequest
+import academic.dtos.DosenUpdateRequest
+import academic.models.Dosen
+import academic.services.DosenService
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
-import java.util.UUID
+import java.util.*
 
-class DosenController(
-    private val dosenRepo: DosenRepository,
-    private val mhsRepo: MahasiswaRepository
-) {
+class DosenController(private val service: DosenService) {
     suspend fun getAll(call: ApplicationCall) {
-        call.respond(dosenRepo.getAll())
+        call.respond(service.getAll())
     }
 
     suspend fun getById(call: ApplicationCall) {
-        val id = call.parameters["id"] ?: throw AcademicException("ID required")
-        call.respond(dosenRepo.getById(id) ?: throw AcademicException("Dosen not found"))
+        val id = UUID.fromString(call.parameters["id"]!!)
+        val dosen = service.getById(id)
+        if (dosen != null) {
+            call.respond(dosen)
+        } else {
+            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Dosen not found")
+        }
     }
 
     suspend fun create(call: ApplicationCall) {
         val request = call.receive<DosenCreateRequest>()
         val dosen = Dosen(
-            id = UUID.randomUUID().toString(),
+            id = UUID.randomUUID(),
             nama = request.nama,
+            nidn = request.nidn,
             email = request.email,
             telepon = request.telepon,
-            nidn = request.nidn,
             departemen = request.departemen
         )
-        dosenRepo.create(dosen)
-        call.respond(mapOf("message" to "Dosen created", "id" to dosen.id))
+        call.respond(service.create(dosen))
     }
 
     suspend fun update(call: ApplicationCall) {
-        val id = call.parameters["id"] ?: throw AcademicException("ID required")
+        val id = UUID.fromString(call.parameters["id"]!!)
         val request = call.receive<DosenUpdateRequest>()
-        dosenRepo.update(id, request)
-        call.respond(mapOf("message" to "Dosen updated"))
+        val existing = service.getById(id) ?: run {
+            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Dosen not found")
+            return
+        }
+        
+        val updated = Dosen(
+            id = existing.id,
+            nama = request.nama ?: existing.nama,
+            nidn = existing.nidn,
+            email = request.email ?: existing.email,
+            telepon = request.telepon ?: existing.telepon,
+            departemen = request.departemen ?: existing.departemen
+        )
+        call.respond(service.update(id, updated))
     }
 
     suspend fun delete(call: ApplicationCall) {
-        val id = call.parameters["id"] ?: throw AcademicException("ID required")
-        dosenRepo.delete(id)
-        call.respond(mapOf("message" to "Dosen deleted"))
+        val id = UUID.fromString(call.parameters["id"]!!)
+        call.respond(service.delete(id))
     }
 
     suspend fun addBimbingan(call: ApplicationCall) {
-        val dosenId = call.parameters["id"] ?: throw AcademicException("Dosen ID required")
-        val mhsId = call.parameters["mhsId"] ?: throw AcademicException("Mahasiswa ID required")
-        
-        val dosen = dosenRepo.getById(dosenId) ?: throw AcademicException("Dosen not found")
-        val mhs = mhsRepo.getById(mhsId) ?: throw AcademicException("Mahasiswa not found")
-        
-        dosenRepo.addBimbingan(dosenId, mhsId)
-        call.respond(mapOf("message" to "Mahasiswa added to bimbingan"))
+        val dosenId = UUID.fromString(call.parameters["id"]!!)
+        val mhsId = UUID.fromString(call.parameters["mhsId"]!!)
+        call.respond(service.addBimbingan(dosenId, mhsId))
     }
 
     suspend fun removeBimbingan(call: ApplicationCall) {
-        val dosenId = call.parameters["id"] ?: throw AcademicException("Dosen ID required")
-        val mhsId = call.parameters["mhsId"] ?: throw AcademicException("Mahasiswa ID required")
-        
-        dosenRepo.removeBimbingan(dosenId, mhsId)
-        call.respond(mapOf("message" to "Mahasiswa removed from bimbingan"))
+        val dosenId = UUID.fromString(call.parameters["id"]!!)
+        val mhsId = UUID.fromString(call.parameters["mhsId"]!!)
+        call.respond(service.removeBimbingan(dosenId, mhsId))
     }
 }

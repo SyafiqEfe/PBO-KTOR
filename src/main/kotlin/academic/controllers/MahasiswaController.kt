@@ -1,68 +1,55 @@
 package academic.controllers
 
-import academic.models.*
-import academic.dtos.*
-import academic.repositories.*
-import academic.exceptions.AcademicException
+import academic.dtos.MahasiswaUpdateRequest
+import academic.dtos.AmbilMatkulRequest
+import academic.models.Mahasiswa
+import academic.services.MahasiswaService
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
-import java.util.UUID
+import java.util.*
 
-class MahasiswaController(
-    private val repo: MahasiswaRepository,
-    private val matkulRepo: MataKuliahRepository
-) {
+class MahasiswaController(private val service: MahasiswaService) {
     suspend fun getAll(call: ApplicationCall) {
-        call.respond(repo.getAll())
+        call.respond(service.getAll())
     }
 
     suspend fun getById(call: ApplicationCall) {
-        val id = call.parameters["id"] ?: throw AcademicException("ID required")
-        call.respond(repo.getById(id) ?: throw AcademicException("Mahasiswa not found"))
+        val id = UUID.fromString(call.parameters["id"]!!)
+        val mahasiswa = service.getById(id)
+        if (mahasiswa != null) {
+            call.respond(mahasiswa)
+        } else {
+            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Mahasiswa not found")
+        }
     }
 
     suspend fun create(call: ApplicationCall) {
-        val request = call.receive<MahasiswaCreateRequest>()
-        val mhs = Mahasiswa(
-            id = UUID.randomUUID().toString(),
-            nama = request.nama,
-            email = request.email,
-            telepon = request.telepon,
-            nim = request.nim,
-            programStudi = request.programStudi,
-            semester = request.semester
-        )
-        repo.create(mhs)
-        call.respond(mapOf("message" to "Mahasiswa created", "id" to mhs.id))
+        val mahasiswa = call.receive<Mahasiswa>()
+        call.respond(service.create(mahasiswa))
     }
 
     suspend fun update(call: ApplicationCall) {
-        val id = call.parameters["id"] ?: throw AcademicException("ID required")
+        val id = UUID.fromString(call.parameters["id"]!!)
         val request = call.receive<MahasiswaUpdateRequest>()
-        repo.update(id, request)
-        call.respond(mapOf("message" to "Mahasiswa updated"))
+        val result = service.updateFromRequest(id, request)
+        call.respond(result)
     }
 
     suspend fun delete(call: ApplicationCall) {
-        val id = call.parameters["id"] ?: throw AcademicException("ID required")
-        repo.delete(id)
-        call.respond(mapOf("message" to "Mahasiswa deleted"))
+        val id = UUID.fromString(call.parameters["id"]!!)
+        call.respond(service.delete(id))
     }
 
     suspend fun ambilMatkul(call: ApplicationCall) {
-        val id = call.parameters["id"] ?: throw AcademicException("ID required")
+        val id = UUID.fromString(call.parameters["id"]!!)
         val request = call.receive<AmbilMatkulRequest>()
-        val matkul = matkulRepo.getByKode(request.kode) 
-            ?: throw AcademicException("Mata kuliah not found")
-        repo.ambilMatkul(id, matkul)
-        call.respond(mapOf("message" to "Mata kuliah diambil"))
+        call.respond(service.ambilMatkul(id, request.kode))
     }
 
     suspend fun dropMatkul(call: ApplicationCall) {
-        val id = call.parameters["id"] ?: throw AcademicException("ID required")
-        val kode = call.parameters["kode"] ?: throw AcademicException("Kode required")
-        repo.dropMatkul(id, kode)
-        call.respond(mapOf("message" to "Mata kuliah di-drop"))
+        val id = UUID.fromString(call.parameters["id"]!!)
+        val kode = call.parameters["kode"]!!
+        call.respond(service.dropMatkul(id, kode))
     }
 }

@@ -3,11 +3,10 @@ package academic.dtos
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class MahasiswaCreateRequest(
+data class MataKuliahCreateRequest(
+    val kode: String,
     val nama: String,
-    val email: String,
-    val telepon: String,
-    val nim: String,
-    val programStudi: String,
-    val semester: Int
+    val sks: Int,
+    val semester: Int,
+    val deskripsi: String = ""
 )

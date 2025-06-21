@@ -1,11 +1,12 @@
 package academic.models
 
-data class MahasiswaMatkul(
-    val mhsId: Int,
-    val matkulKode: String
-)
+import kotlinx.serialization.Serializable
+import java.util.*
 
-data class Bimbingan(
-    val dosenId: Int,
-    val mhsId: Int
+@Serializable
+data class Relasi(
+    val id: String = UUID.randomUUID().toString(),
+    val mahasiswaId: String,
+    val matkulId: String? = null,
+    val dosenId: String? = null
 )

@@ -11,33 +11,43 @@ application {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://maven.pkg.jetbrains.space/public/p/ktor/eap") }
 }
 
 dependencies {
-    // Ktor Core
-    implementation("io.ktor:ktor-server-core-jvm:2.3.7")
-    implementation("io.ktor:ktor-server-netty-jvm:2.3.7")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.7")
-    implementation("io.ktor:ktor-server-call-logging-jvm:2.3.7")
-    
-    // Static content support
-    implementation("io.ktor:ktor-server-http-redirect-jvm:2.3.7")
-    implementation("io.ktor:ktor-server-default-headers-jvm:2.3.7")
-    
-    // Serialization
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.7")
+    // Ktor core
+    implementation("io.ktor:ktor-server-core:2.3.7")
+    implementation("io.ktor:ktor-server-netty:2.3.7")
+    implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
+    implementation("io.ktor:ktor-server-call-logging:2.3.7")
+    implementation("io.ktor:ktor-server-auth:2.3.7")
+    implementation("io.ktor:ktor-server-auth-jwt:2.3.7")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-    
-    // Authentication
-    implementation("io.ktor:ktor-server-auth-jvm:2.3.7")
-    implementation("io.ktor:ktor-server-auth-jwt-jvm:2.3.7")
-    implementation("com.auth0:java-jwt:4.4.0")
-    
+
+    // Ktor additional features
+    implementation("io.ktor:ktor-server-status-pages:2.3.7")
+    implementation("io.ktor:ktor-server-request-validation:2.3.7")
+    implementation("io.ktor:ktor-server-sessions:2.3.7")
+    implementation("io.ktor:ktor-server-cors:2.3.7") // Added CORS support
+
     // Logging
     implementation("ch.qos.logback:logback-classic:1.4.14")
-    
+
+    // JWT
+    implementation("com.auth0:java-jwt:4.4.0")
+
+    // Exposed ORM
+    implementation("org.jetbrains.exposed:exposed-core:0.45.0")
+    implementation("org.jetbrains.exposed:exposed-dao:0.45.0")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.45.0")
+    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:0.45.0")
+
+    // SQLite
+    implementation("org.xerial:sqlite-jdbc:3.43.2.0")
+
     // Testing
-    testImplementation("io.ktor:ktor-server-tests-jvm:2.3.7")
+    testImplementation("io.ktor:ktor-server-tests:2.3.7")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.9.22")
 }
 

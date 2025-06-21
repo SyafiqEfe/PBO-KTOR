@@ -1,35 +1,42 @@
 package academic.repositories
 
-import academic.models.*
-import academic.exceptions.AcademicException
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
+import academic.db.tables.UserTable
+import academic.models.User
+import academic.models.toUser
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 class UserRepository {
-    private val db = ConcurrentHashMap<String, User>()
+    fun getAll(): List<User> = transaction {
+        UserTable.selectAll().map { it.toUser() }
+    }
 
-    fun create(email: String, password: String, role: UserRole, name: String): User {
-        if (db.values.any { it.email == email }) {
-            throw AcademicException("Email already registered")
+    fun findById(id: UUID): User? = transaction {
+        UserTable.select { UserTable.id eq id }
+            .mapNotNull { it.toUser() }
+            .singleOrNull()
+    }
+
+    fun findByEmail(email: String): User? = transaction {
+        UserTable.select { UserTable.email eq email }
+            .mapNotNull { it.toUser() }
+            .singleOrNull()
+    }
+
+    fun create(user: User): User = transaction {
+        UserTable.insert {
+            it[id] = user.id
+            it[email] = user.email
+            it[password] = user.password
+            it[name] = user.name
+            it[role] = user.role
         }
-        
-        val user = User(
-            id = UUID.randomUUID().toString(),
-            email = email,
-            password = password, // Note: In production, hash the password
-            role = role,
-            name = name
-        )
-        
-        db[user.id] = user
-        return user
+        user
     }
 
-    fun findByEmail(email: String): User? {
-        return db.values.find { it.email == email }
-    }
-
-    fun findById(id: String): User? {
-        return db[id]
+    fun delete(id: UUID): Boolean = transaction {
+        UserTable.deleteWhere { UserTable.id eq id } > 0
     }
 }

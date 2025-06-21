@@ -1,45 +1,49 @@
 package academic.repositories
 
-import academic.models.*
-import academic.dtos.MahasiswaUpdateRequest
-import academic.exceptions.AcademicException
-import java.util.concurrent.ConcurrentHashMap
+import academic.db.tables.MahasiswaTable
+import academic.models.Mahasiswa
+import academic.models.toMahasiswa
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 class MahasiswaRepository {
-    private val db = ConcurrentHashMap<String, Mahasiswa>()
+    fun getAll(): List<Mahasiswa> = transaction {
+        MahasiswaTable.selectAll().map { it.toMahasiswa() }
+    }
 
-    fun getAll(): List<Mahasiswa> = db.values.toList()
-    fun getById(id: String): Mahasiswa? = db[id]
-    
-    fun create(mhs: Mahasiswa) {
-        if (db.values.any { it.nim == mhs.nim }) {
-            throw AcademicException("NIM already exists")
+    fun getById(id: UUID): Mahasiswa? = transaction {
+        MahasiswaTable.select { MahasiswaTable.id eq id }
+            .mapNotNull { it.toMahasiswa() }
+            .singleOrNull()
+    }
+
+    fun create(mhs: Mahasiswa): Mahasiswa = transaction {
+        MahasiswaTable.insert {
+            it[MahasiswaTable.id] = mhs.id
+            it[MahasiswaTable.nama] = mhs.nama
+            it[MahasiswaTable.nim] = mhs.nim
+            it[MahasiswaTable.email] = mhs.email
+            it[MahasiswaTable.telepon] = mhs.telepon
+            it[MahasiswaTable.programStudi] = mhs.programStudi
+            it[MahasiswaTable.semester] = mhs.semester
         }
-        db[mhs.id] = mhs
+        mhs
     }
 
-    fun update(id: String, request: MahasiswaUpdateRequest) {
-        val existing = db[id] ?: throw AcademicException("Mahasiswa not found")
-        db[id] = existing.copy(
-            nama = request.nama ?: existing.nama,
-            email = request.email ?: existing.email,
-            telepon = request.telepon ?: existing.telepon,
-            programStudi = request.programStudi ?: existing.programStudi,
-            semester = request.semester ?: existing.semester
-        )
+    fun update(id: UUID, mhs: Mahasiswa): Boolean = transaction {
+        MahasiswaTable.update({ MahasiswaTable.id eq id }) {
+            it[MahasiswaTable.nama] = mhs.nama
+            it[MahasiswaTable.nim] = mhs.nim
+            it[MahasiswaTable.email] = mhs.email
+            it[MahasiswaTable.telepon] = mhs.telepon
+            it[MahasiswaTable.programStudi] = mhs.programStudi
+            it[MahasiswaTable.semester] = mhs.semester
+        } > 0
     }
 
-    fun delete(id: String) {
-        db.remove(id) ?: throw AcademicException("Mahasiswa not found")
-    }
-
-    fun ambilMatkul(id: String, matkul: MataKuliah) {
-        val mhs = db[id] ?: throw AcademicException("Mahasiswa not found")
-        mhs.ambilMataKuliah(matkul)
-    }
-
-    fun dropMatkul(id: String, kode: String) {
-        val mhs = db[id] ?: throw AcademicException("Mahasiswa not found")
-        mhs.dropMataKuliah(kode)
+    fun delete(id: UUID): Boolean = transaction {
+        MahasiswaTable.deleteWhere { MahasiswaTable.id eq id } > 0
     }
 }
