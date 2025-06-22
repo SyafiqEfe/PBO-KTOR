@@ -144,6 +144,18 @@
         border-radius: 4px;
         box-sizing: border-box;
       }
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+      .error {
+        color: #e74c3c;
+        background-color: #fdf2f2;
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 1rem 0;
+      }
     </style>
   </head>
   <body>
@@ -204,6 +216,7 @@
               Tambah Mahasiswa
             </button>
           </div>
+          <div id="studentsError" class="error" style="display: none"></div>
           <table id="studentsTable">
             <thead>
               <tr>
@@ -217,7 +230,7 @@
             </thead>
             <tbody>
               <tr>
-                <td colspan="6">Loading...</td>
+                <td colspan="6" class="loading">Loading...</td>
               </tr>
             </tbody>
           </table>
@@ -240,6 +253,7 @@
               Tambah Dosen
             </button>
           </div>
+          <div id="lecturersError" class="error" style="display: none"></div>
           <table id="lecturersTable">
             <thead>
               <tr>
@@ -253,7 +267,7 @@
             </thead>
             <tbody>
               <tr>
-                <td colspan="6">Loading...</td>
+                <td colspan="6" class="loading">Loading...</td>
               </tr>
             </tbody>
           </table>
@@ -276,6 +290,7 @@
               Tambah Mata Kuliah
             </button>
           </div>
+          <div id="coursesError" class="error" style="display: none"></div>
           <table id="coursesTable">
             <thead>
               <tr>
@@ -289,7 +304,7 @@
             </thead>
             <tbody>
               <tr>
-                <td colspan="6">Loading...</td>
+                <td colspan="6" class="loading">Loading...</td>
               </tr>
             </tbody>
           </table>
@@ -449,6 +464,7 @@
     </div>
 
     <script>
+      // Check authentication and role
       const token = localStorage.getItem("token");
       if (!token) {
         window.location.href = "/login.html";
@@ -458,6 +474,26 @@
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       };
+
+      // Check if user is admin
+      async function checkAdminRole() {
+        try {
+          const response = await fetch("/api/me", { headers });
+          if (response.ok) {
+            const user = await response.json();
+            if (user.role !== "ADMIN") {
+              alert("Access denied. Admin role required.");
+              window.location.href = "/login.html";
+              return;
+            }
+          } else {
+            window.location.href = "/login.html";
+          }
+        } catch (error) {
+          console.error("Error checking role:", error);
+          window.location.href = "/login.html";
+        }
+      }
 
       // Navigation
       function showSection(sectionId) {
@@ -522,116 +558,152 @@
 
       // Load students
       async function loadStudents() {
+        const tbody = document.querySelector("#studentsTable tbody");
+        const errorDiv = document.getElementById("studentsError");
+
         try {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="loading">Loading...</td></tr>';
+          errorDiv.style.display = "none";
+
           const response = await fetch("/api/mahasiswa", { headers });
-          if (response.ok) {
-            const students = await response.json();
-            const tbody = document.querySelector("#studentsTable tbody");
 
-            if (students.length === 0) {
-              tbody.innerHTML =
-                '<tr><td colspan="6">Tidak ada data mahasiswa</td></tr>';
-              return;
-            }
-
-            tbody.innerHTML = students
-              .map(
-                (student) => `
-                        <tr>
-                            <td>${student.nim}</td>
-                            <td>${student.nama}</td>
-                            <td>${student.email}</td>
-                            <td>${student.programStudi}</td>
-                            <td>${student.semester}</td>
-                            <td>
-                                <button class="btn" onclick="editStudent('${student.id}')">Edit</button>
-                                <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">Hapus</button>
-                            </td>
-                        </tr>
-                    `
-              )
-              .join("");
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
+
+          const students = await response.json();
+
+          if (students.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="6">Tidak ada data mahasiswa</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = students
+            .map(
+              (student) => `
+                      <tr>
+                          <td>${student.nim}</td>
+                          <td>${student.nama}</td>
+                          <td>${student.email}</td>
+                          <td>${student.programStudi}</td>
+                          <td>${student.semester}</td>
+                          <td>
+                              <button class="btn" onclick="editStudent('${student.id}')">Edit</button>
+                              <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">Hapus</button>
+                          </td>
+                      </tr>
+                  `
+            )
+            .join("");
         } catch (error) {
           console.error("Error loading students:", error);
+          errorDiv.textContent = `Error loading students: ${error.message}`;
+          errorDiv.style.display = "block";
+          tbody.innerHTML = '<tr><td colspan="6">Error loading data</td></tr>';
         }
       }
 
       // Load lecturers
       async function loadLecturers() {
+        const tbody = document.querySelector("#lecturersTable tbody");
+        const errorDiv = document.getElementById("lecturersError");
+
         try {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="loading">Loading...</td></tr>';
+          errorDiv.style.display = "none";
+
           const response = await fetch("/api/dosen", { headers });
-          if (response.ok) {
-            const lecturers = await response.json();
-            const tbody = document.querySelector("#lecturersTable tbody");
 
-            if (lecturers.length === 0) {
-              tbody.innerHTML =
-                '<tr><td colspan="6">Tidak ada data dosen</td></tr>';
-              return;
-            }
-
-            tbody.innerHTML = lecturers
-              .map(
-                (lecturer) => `
-                        <tr>
-                            <td>${lecturer.nidn}</td>
-                            <td>${lecturer.nama}</td>
-                            <td>${lecturer.email}</td>
-                            <td>${lecturer.departemen}</td>
-                            <td>${lecturer.telepon}</td>
-                            <td>
-                                <button class="btn" onclick="editLecturer('${lecturer.id}')">Edit</button>
-                                <button class="btn btn-danger" onclick="deleteLecturer('${lecturer.id}')">Hapus</button>
-                            </td>
-                        </tr>
-                    `
-              )
-              .join("");
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
+
+          const lecturers = await response.json();
+
+          if (lecturers.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="6">Tidak ada data dosen</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = lecturers
+            .map(
+              (lecturer) => `
+                      <tr>
+                          <td>${lecturer.nidn}</td>
+                          <td>${lecturer.nama}</td>
+                          <td>${lecturer.email}</td>
+                          <td>${lecturer.departemen}</td>
+                          <td>${lecturer.telepon}</td>
+                          <td>
+                              <button class="btn" onclick="editLecturer('${lecturer.id}')">Edit</button>
+                              <button class="btn btn-danger" onclick="deleteLecturer('${lecturer.id}')">Hapus</button>
+                          </td>
+                      </tr>
+                  `
+            )
+            .join("");
         } catch (error) {
           console.error("Error loading lecturers:", error);
+          errorDiv.textContent = `Error loading lecturers: ${error.message}`;
+          errorDiv.style.display = "block";
+          tbody.innerHTML = '<tr><td colspan="6">Error loading data</td></tr>';
         }
       }
 
       // Load courses
       async function loadCourses() {
+        const tbody = document.querySelector("#coursesTable tbody");
+        const errorDiv = document.getElementById("coursesError");
+
         try {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="loading">Loading...</td></tr>';
+          errorDiv.style.display = "none";
+
           const response = await fetch("/api/matakuliah", { headers });
-          if (response.ok) {
-            const courses = await response.json();
-            const tbody = document.querySelector("#coursesTable tbody");
 
-            if (courses.length === 0) {
-              tbody.innerHTML =
-                '<tr><td colspan="6">Tidak ada data mata kuliah</td></tr>';
-              return;
-            }
-
-            tbody.innerHTML = courses
-              .map(
-                (course) => `
-                        <tr>
-                            <td>${course.kode}</td>
-                            <td>${course.nama}</td>
-                            <td>${course.sks}</td>
-                            <td>${course.semester}</td>
-                            <td>${course.deskripsi || "-"}</td>
-                            <td>
-                                <button class="btn" onclick="editCourse('${
-                                  course.kode
-                                }')">Edit</button>
-                                <button class="btn btn-danger" onclick="deleteCourse('${
-                                  course.kode
-                                }')">Hapus</button>
-                            </td>
-                        </tr>
-                    `
-              )
-              .join("");
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
+
+          const courses = await response.json();
+
+          if (courses.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="6">Tidak ada data mata kuliah</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = courses
+            .map(
+              (course) => `
+                      <tr>
+                          <td>${course.kode}</td>
+                          <td>${course.nama}</td>
+                          <td>${course.sks}</td>
+                          <td>${course.semester}</td>
+                          <td>${course.deskripsi || "-"}</td>
+                          <td>
+                              <button class="btn" onclick="editCourse('${
+                                course.kode
+                              }')">Edit</button>
+                              <button class="btn btn-danger" onclick="deleteCourse('${
+                                course.kode
+                              }')">Hapus</button>
+                          </td>
+                      </tr>
+                  `
+            )
+            .join("");
         } catch (error) {
           console.error("Error loading courses:", error);
+          errorDiv.textContent = `Error loading courses: ${error.message}`;
+          errorDiv.style.display = "block";
+          tbody.innerHTML = '<tr><td colspan="6">Error loading data</td></tr>';
         }
       }
 
@@ -771,7 +843,8 @@
               alert("Mahasiswa berhasil dihapus!");
               loadStudents();
             } else {
-              alert("Gagal menghapus mahasiswa");
+              const error = await response.text();
+              alert("Gagal menghapus mahasiswa: " + error);
             }
           } catch (error) {
             alert("Error: " + error.message);
@@ -791,7 +864,8 @@
               alert("Dosen berhasil dihapus!");
               loadLecturers();
             } else {
-              alert("Gagal menghapus dosen");
+              const error = await response.text();
+              alert("Gagal menghapus dosen: " + error);
             }
           } catch (error) {
             alert("Error: " + error.message);
@@ -811,7 +885,8 @@
               alert("Mata kuliah berhasil dihapus!");
               loadCourses();
             } else {
-              alert("Gagal menghapus mata kuliah");
+              const error = await response.text();
+              alert("Gagal menghapus mata kuliah: " + error);
             }
           } catch (error) {
             alert("Error: " + error.message);
@@ -838,7 +913,9 @@
       }
 
       // Initialize
-      loadDashboardStats();
+      checkAdminRole().then(() => {
+        loadDashboardStats();
+      });
     </script>
   </body>
 </html>

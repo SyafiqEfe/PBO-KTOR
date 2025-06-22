@@ -85,6 +85,18 @@
       .section.active {
         display: block;
       }
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+      .error {
+        color: #e74c3c;
+        background-color: #fdf2f2;
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 1rem 0;
+      }
     </style>
   </head>
   <body>
@@ -113,7 +125,7 @@
         <div class="card">
           <h4>Informasi Dosen</h4>
           <div id="dosenInfo">
-            <p>Loading...</p>
+            <p class="loading">Loading...</p>
           </div>
         </div>
 
@@ -129,6 +141,7 @@
       <div id="students" class="section">
         <div class="card">
           <h4>Mahasiswa Bimbingan</h4>
+          <div id="studentsError" class="error" style="display: none"></div>
           <table id="bimbinganTable">
             <thead>
               <tr>
@@ -141,7 +154,7 @@
             </thead>
             <tbody>
               <tr>
-                <td colspan="5">Loading...</td>
+                <td colspan="5" class="loading">Loading...</td>
               </tr>
             </tbody>
           </table>
@@ -152,6 +165,7 @@
       <div id="all-students" class="section">
         <div class="card">
           <h4>Semua Mahasiswa</h4>
+          <div id="allStudentsError" class="error" style="display: none"></div>
           <table id="allStudentsTable">
             <thead>
               <tr>
@@ -164,7 +178,7 @@
             </thead>
             <tbody>
               <tr>
-                <td colspan="5">Loading...</td>
+                <td colspan="5" class="loading">Loading...</td>
               </tr>
             </tbody>
           </table>
@@ -176,13 +190,14 @@
         <div class="card">
           <h4>Profil Dosen</h4>
           <div id="profileInfo">
-            <p>Loading...</p>
+            <p class="loading">Loading...</p>
           </div>
         </div>
       </div>
     </div>
 
     <script>
+      // Check authentication and role
       const token = localStorage.getItem("token");
       if (!token) {
         window.location.href = "/login.html";
@@ -194,6 +209,27 @@
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       };
+
+      // Check if user is dosen
+      async function checkDosenRole() {
+        try {
+          const response = await fetch("/api/me", { headers });
+          if (response.ok) {
+            const user = await response.json();
+            if (user.role !== "DOSEN") {
+              alert("Access denied. Dosen role required.");
+              window.location.href = "/login.html";
+              return;
+            }
+            currentDosenId = user.id;
+          } else {
+            window.location.href = "/login.html";
+          }
+        } catch (error) {
+          console.error("Error checking role:", error);
+          window.location.href = "/login.html";
+        }
+      }
 
       // Navigation
       function showSection(sectionId) {
@@ -260,32 +296,60 @@
           }
         } catch (error) {
           console.error("Error loading dosen info:", error);
+          document.getElementById("dosenInfo").innerHTML = `
+                    <div class="error">Error loading dosen information: ${error.message}</div>
+                `;
         }
       }
 
       // Load bimbingan students
       async function loadBimbinganStudents() {
-        document.querySelector("#bimbinganTable tbody").innerHTML =
-          '<tr><td colspan="5">Belum ada mahasiswa bimbingan</td></tr>';
+        const tbody = document.querySelector("#bimbinganTable tbody");
+        const errorDiv = document.getElementById("studentsError");
+
+        try {
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="loading">Loading...</td></tr>';
+          errorDiv.style.display = "none";
+
+          // This would need to be implemented in the backend
+          tbody.innerHTML =
+            '<tr><td colspan="5">Belum ada mahasiswa bimbingan</td></tr>';
+        } catch (error) {
+          console.error("Error loading bimbingan students:", error);
+          errorDiv.textContent = `Error loading bimbingan students: ${error.message}`;
+          errorDiv.style.display = "block";
+          tbody.innerHTML = '<tr><td colspan="5">Error loading data</td></tr>';
+        }
       }
 
       // Load all students
       async function loadAllStudents() {
+        const tbody = document.querySelector("#allStudentsTable tbody");
+        const errorDiv = document.getElementById("allStudentsError");
+
         try {
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="loading">Loading...</td></tr>';
+          errorDiv.style.display = "none";
+
           const response = await fetch("/api/mahasiswa", { headers });
-          if (response.ok) {
-            const students = await response.json();
-            const tbody = document.querySelector("#allStudentsTable tbody");
 
-            if (students.length === 0) {
-              tbody.innerHTML =
-                '<tr><td colspan="5">Tidak ada data mahasiswa</td></tr>';
-              return;
-            }
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
 
-            tbody.innerHTML = students
-              .map(
-                (student) => `
+          const students = await response.json();
+
+          if (students.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="5">Tidak ada data mahasiswa</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = students
+            .map(
+              (student) => `
                         <tr>
                             <td>${student.nim}</td>
                             <td>${student.nama}</td>
@@ -298,11 +362,13 @@
                             </td>
                         </tr>
                     `
-              )
-              .join("");
-          }
+            )
+            .join("");
         } catch (error) {
           console.error("Error loading students:", error);
+          errorDiv.textContent = `Error loading students: ${error.message}`;
+          errorDiv.style.display = "block";
+          tbody.innerHTML = '<tr><td colspan="5">Error loading data</td></tr>';
         }
       }
 
@@ -323,7 +389,8 @@
             alert("Mahasiswa berhasil ditambahkan ke bimbingan!");
             loadBimbinganStudents();
           } else {
-            alert("Gagal menambahkan mahasiswa ke bimbingan");
+            const error = await response.text();
+            alert("Gagal menambahkan mahasiswa ke bimbingan: " + error);
           }
         } catch (error) {
           alert("Error: " + error.message);
@@ -343,7 +410,9 @@
       }
 
       // Initialize
-      loadDosenInfo();
+      checkDosenRole().then(() => {
+        loadDosenInfo();
+      });
     </script>
   </body>
 </html>

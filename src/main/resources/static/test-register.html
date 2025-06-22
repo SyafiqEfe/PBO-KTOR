@@ -38,6 +38,8 @@
         margin: 1rem 0;
         white-space: pre-wrap;
         font-family: monospace;
+        max-height: 400px;
+        overflow-y: auto;
       }
     </style>
   </head>
@@ -110,8 +112,12 @@
               const data = await response.json();
               log(`✅ ${user.role} registered successfully`);
             } else {
-              const error = await response.text();
-              log(`❌ ${user.role} registration failed: ${error}`);
+              const error = await response.json();
+              log(
+                `❌ ${user.role} registration failed: ${
+                  error.error || "Unknown error"
+                }`
+              );
             }
           } catch (error) {
             log(`❌ ${user.role} registration error: ${error.message}`);
@@ -166,51 +172,73 @@
             });
 
             if (!loginResponse.ok) {
-              log(`❌ Login failed for ${login.expectedRole}`);
+              const error = await loginResponse.json();
+              log(`❌ Login failed for ${login.expectedRole}: ${error.error}`);
               continue;
             }
 
             const loginData = await loginResponse.json();
             log(`✅ Login successful for ${login.expectedRole}`);
 
-            // Get profile
-            const profileResponse = await fetch("/api/me", {
-              headers: {
-                Authorization: `Bearer ${loginData.token}`,
-              },
-            });
+            // Check if user data is in login response
+            if (loginData.user) {
+              log(
+                `✅ User data in login response: ${loginData.user.name} (${loginData.user.role})`
+              );
 
-            if (profileResponse.ok) {
-              const profile = await profileResponse.json();
-              log(`✅ Profile retrieved: ${profile.name} (${profile.role})`);
-
-              if (profile.role === login.expectedRole) {
-                log(`✅ Role matches expected: ${profile.role}`);
-
-                // Determine redirect URL
-                let redirectUrl;
-                switch (profile.role) {
-                  case "ADMIN":
-                    redirectUrl = "/admin/dashboard.html";
-                    break;
-                  case "DOSEN":
-                    redirectUrl = "/dosen/dashboard.html";
-                    break;
-                  case "MAHASISWA":
-                    redirectUrl = "/mahasiswa/dashboard.html";
-                    break;
-                  default:
-                    redirectUrl = "/user/dashboard.html";
-                }
-                log(`📍 Should redirect to: ${redirectUrl}`);
+              if (loginData.user.role === login.expectedRole) {
+                log(`✅ Role matches expected: ${loginData.user.role}`);
               } else {
                 log(
-                  `❌ Role mismatch! Expected: ${login.expectedRole}, Got: ${profile.role}`
+                  `❌ Role mismatch! Expected: ${login.expectedRole}, Got: ${loginData.user.role}`
                 );
               }
             } else {
-              log(`❌ Failed to get profile for ${login.expectedRole}`);
+              // Try to get profile separately
+              const profileResponse = await fetch("/api/me", {
+                headers: {
+                  Authorization: `Bearer ${loginData.token}`,
+                },
+              });
+
+              if (profileResponse.ok) {
+                const profile = await profileResponse.json();
+                log(`✅ Profile retrieved: ${profile.name} (${profile.role})`);
+
+                if (profile.role === login.expectedRole) {
+                  log(`✅ Role matches expected: ${profile.role}`);
+                } else {
+                  log(
+                    `❌ Role mismatch! Expected: ${login.expectedRole}, Got: ${profile.role}`
+                  );
+                }
+              } else {
+                const error = await profileResponse.json();
+                log(
+                  `❌ Failed to get profile for ${login.expectedRole}: ${error.error}`
+                );
+              }
             }
+
+            // Determine redirect URL
+            let redirectUrl;
+            const role = loginData.user
+              ? loginData.user.role
+              : login.expectedRole;
+            switch (role) {
+              case "ADMIN":
+                redirectUrl = "/admin/dashboard.html";
+                break;
+              case "DOSEN":
+                redirectUrl = "/dosen/dashboard.html";
+                break;
+              case "MAHASISWA":
+                redirectUrl = "/mahasiswa/dashboard.html";
+                break;
+              default:
+                redirectUrl = "/user/dashboard.html";
+            }
+            log(`📍 Should redirect to: ${redirectUrl}`);
           } catch (error) {
             log(`❌ Error testing ${login.expectedRole}: ${error.message}`);
           }

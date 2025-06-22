@@ -1,60 +1,74 @@
 package academic.controllers
 
-import academic.dtos.MataKuliahCreateRequest
-import academic.dtos.MataKuliahUpdateRequest
-import academic.models.MataKuliah
+import academic.models.MataKuliahCreateRequest
+import academic.models.MataKuliahUpdateRequest
 import academic.services.MataKuliahService
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
+import io.ktor.http.*
 
-class MataKuliahController(private val service: MataKuliahService) {
+class MataKuliahController(private val mataKuliahService: MataKuliahService) {
+    
     suspend fun getAll(call: ApplicationCall) {
-        call.respond(service.getAll())
+        try {
+            val mataKuliah = mataKuliahService.getAll()
+            call.respond(mataKuliah)
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to e.message))
+        }
     }
-
+    
     suspend fun getByKode(call: ApplicationCall) {
-        val kode = call.parameters["kode"]!!
-        val matkul = service.getByKode(kode)
-        if (matkul != null) {
-            call.respond(matkul)
-        } else {
-            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Mata kuliah not found")
+        try {
+            val kode = call.parameters["kode"] ?: throw IllegalArgumentException("Missing kode")
+            val mataKuliah = mataKuliahService.getByKode(kode)
+            if (mataKuliah != null) {
+                call.respond(mataKuliah)
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Mata kuliah not found"))
+            }
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
         }
     }
-
+    
     suspend fun create(call: ApplicationCall) {
-        val request = call.receive<MataKuliahCreateRequest>()
-        val matkul = MataKuliah(
-            kode = request.kode,
-            nama = request.nama,
-            sks = request.sks,
-            semester = request.semester,
-            deskripsi = request.deskripsi
-        )
-        call.respond(service.create(matkul))
-    }
-
-    suspend fun update(call: ApplicationCall) {
-        val kode = call.parameters["kode"]!!
-        val request = call.receive<MataKuliahUpdateRequest>()
-        val existing = service.getByKode(kode) ?: run {
-            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Mata kuliah not found")
-            return
+        try {
+            val request = call.receive<MataKuliahCreateRequest>()
+            val mataKuliah = mataKuliahService.create(request)
+            call.respond(HttpStatusCode.Created, mataKuliah)
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
         }
-        
-        val updated = MataKuliah(
-            kode = existing.kode,
-            nama = request.nama ?: existing.nama,
-            sks = request.sks ?: existing.sks,
-            semester = request.semester ?: existing.semester,
-            deskripsi = request.deskripsi ?: existing.deskripsi
-        )
-        call.respond(service.update(kode, updated))
     }
-
+    
+    suspend fun update(call: ApplicationCall) {
+        try {
+            val kode = call.parameters["kode"] ?: throw IllegalArgumentException("Missing kode")
+            val request = call.receive<MataKuliahUpdateRequest>()
+            val success = mataKuliahService.update(kode, request)
+            if (success) {
+                call.respond(HttpStatusCode.OK, mapOf("message" to "Mata kuliah updated successfully"))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Mata kuliah not found"))
+            }
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
+        }
+    }
+    
     suspend fun delete(call: ApplicationCall) {
-        val kode = call.parameters["kode"]!!
-        call.respond(service.delete(kode))
+        try {
+            val kode = call.parameters["kode"] ?: throw IllegalArgumentException("Missing kode")
+            val success = mataKuliahService.delete(kode)
+            if (success) {
+                call.respond(HttpStatusCode.OK, mapOf("message" to "Mata kuliah deleted successfully"))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Mata kuliah not found"))
+            }
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
+        }
     }
 }

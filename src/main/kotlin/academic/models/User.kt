@@ -9,7 +9,9 @@ data class User(
     val email: String,
     val name: String,
     val role: String,
-    val password: String
+    val password: String,
+    val nim: String? = null,   // ✅ Tambah properti nim
+    val nidn: String? = null   // ✅ Tambah properti nidn
 )
 
 fun ResultRow.toUser(): User {
@@ -18,6 +20,8 @@ fun ResultRow.toUser(): User {
         email = this[UserTable.email],
         name = this[UserTable.name],
         role = this[UserTable.role],
-        password = this[UserTable.password]
+        password = this[UserTable.password],
+        nim = this[UserTable.nim],   // ✅ Ambil nim dari table
+        nidn = this[UserTable.nidn]  // ✅ Ambil nidn dari table
     )
 }

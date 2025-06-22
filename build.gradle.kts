@@ -1,68 +1,68 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+val ktor_version: String by project
+val kotlin_version: String by project
+val logback_version: String by project
+val exposed_version: String by project
+val h2_version: String by project
+
 plugins {
-    application
-    kotlin("jvm") version "1.9.22"
-    id("io.ktor.plugin") version "2.3.7"
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("jvm") version "1.9.10"
+    id("io.ktor.plugin") version "2.3.4"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.10"
 }
+
+group = "academic"
+version = "0.0.1"
 
 application {
     mainClass.set("academic.MainAkademikKt")
+
+    val isDevelopment: Boolean = project.ext.has("development")
+    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
-repositories {
-    mavenCentral()
-    maven { url = uri("https://maven.pkg.jetbrains.space/public/p/ktor/eap") }
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
-dependencies {
-    // Ktor core
-    implementation("io.ktor:ktor-server-core:2.3.7")
-    implementation("io.ktor:ktor-server-netty:2.3.7")
-    implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
-    implementation("io.ktor:ktor-server-call-logging:2.3.7")
-    implementation("io.ktor:ktor-server-auth:2.3.7")
-    implementation("io.ktor:ktor-server-auth-jwt:2.3.7")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-
-    // Ktor additional features
-    implementation("io.ktor:ktor-server-status-pages:2.3.7")
-    implementation("io.ktor:ktor-server-request-validation:2.3.7")
-    implementation("io.ktor:ktor-server-sessions:2.3.7")
-    implementation("io.ktor:ktor-server-cors:2.3.7") // Added CORS support
-
-    // Logging
-    implementation("ch.qos.logback:logback-classic:1.4.14")
-
-    // JWT
-    implementation("com.auth0:java-jwt:4.4.0")
-
-    // Exposed ORM
-    implementation("org.jetbrains.exposed:exposed-core:0.45.0")
-    implementation("org.jetbrains.exposed:exposed-dao:0.45.0")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.45.0")
-    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:0.45.0")
-
-    // SQLite
-    implementation("org.xerial:sqlite-jdbc:3.43.2.0")
-
-    // Testing
-    testImplementation("io.ktor:ktor-server-tests:2.3.7")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.9.22")
-}
-
-kotlin {
-    jvmToolchain(21)
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+tasks.withType<KotlinCompile> {
     kotlinOptions {
-        jvmTarget = "21"
+        jvmTarget = "17"
         freeCompilerArgs = listOf("-Xjsr305=strict")
     }
 }
 
-tasks.withType<JavaCompile> {
-    sourceCompatibility = "21"
-    targetCompatibility = "21"
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("io.ktor:ktor-server-core-jvm")
+    implementation("io.ktor:ktor-server-auth-jvm")
+    implementation("io.ktor:ktor-server-auth-jwt-jvm")
+    implementation("io.ktor:ktor-server-sessions-jvm")
+    implementation("io.ktor:ktor-server-host-common-jvm")
+    implementation("io.ktor:ktor-server-status-pages-jvm")
+    implementation("io.ktor:ktor-server-compression-jvm")
+    implementation("io.ktor:ktor-server-cors-jvm")
+    implementation("io.ktor:ktor-server-call-logging-jvm")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
+    implementation("io.ktor:ktor-server-netty-jvm")
+    implementation("ch.qos.logback:logback-classic:$logback_version")
+
+    // Database
+    implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-java-time:$exposed_version")
+    implementation("com.h2database:h2:$h2_version")
+
+    // Security
+    implementation("org.mindrot:jbcrypt:0.4")
+
+    testImplementation("io.ktor:ktor-server-tests-jvm")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
 }

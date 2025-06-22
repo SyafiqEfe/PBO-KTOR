@@ -1,75 +1,73 @@
 package academic.controllers
 
-import academic.dtos.DosenCreateRequest
-import academic.dtos.DosenUpdateRequest
-import academic.models.Dosen
+import academic.models.*
 import academic.services.DosenService
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
-import java.util.*
 
-class DosenController(private val service: DosenService) {
-    suspend fun getAll(call: ApplicationCall) {
-        call.respond(service.getAll())
-    }
+class DosenController(private val dosenService: DosenService) {
 
-    suspend fun getById(call: ApplicationCall) {
-        val id = UUID.fromString(call.parameters["id"]!!)
-        val dosen = service.getById(id)
-        if (dosen != null) {
-            call.respond(dosen)
-        } else {
-            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Dosen not found")
+    suspend fun getAllDosen(call: ApplicationCall) {
+        try {
+            val dosen = dosenService.getAllDosen()
+            call.respond(HttpStatusCode.OK, dosen)
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to e.message))
         }
     }
 
-    suspend fun create(call: ApplicationCall) {
-        val request = call.receive<DosenCreateRequest>()
-        val dosen = Dosen(
-            id = UUID.randomUUID(),
-            nama = request.nama,
-            nidn = request.nidn,
-            email = request.email,
-            telepon = request.telepon,
-            departemen = request.departemen
-        )
-        call.respond(service.create(dosen))
-    }
-
-    suspend fun update(call: ApplicationCall) {
-        val id = UUID.fromString(call.parameters["id"]!!)
-        val request = call.receive<DosenUpdateRequest>()
-        val existing = service.getById(id) ?: run {
-            call.respond(io.ktor.http.HttpStatusCode.NotFound, "Dosen not found")
-            return
+    suspend fun getDosenById(call: ApplicationCall) {
+        try {
+            val id = call.parameters["id"] ?: return call.respond(HttpStatusCode.BadRequest, "Missing ID")
+            val dosen = dosenService.getDosenById(id)
+            if (dosen != null) {
+                call.respond(HttpStatusCode.OK, dosen)
+            } else {
+                call.respond(HttpStatusCode.NotFound, "Dosen not found")
+            }
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to e.message))
         }
-        
-        val updated = Dosen(
-            id = existing.id,
-            nama = request.nama ?: existing.nama,
-            nidn = existing.nidn,
-            email = request.email ?: existing.email,
-            telepon = request.telepon ?: existing.telepon,
-            departemen = request.departemen ?: existing.departemen
-        )
-        call.respond(service.update(id, updated))
     }
 
-    suspend fun delete(call: ApplicationCall) {
-        val id = UUID.fromString(call.parameters["id"]!!)
-        call.respond(service.delete(id))
+    suspend fun createDosen(call: ApplicationCall) {
+        try {
+            val request = call.receive<DosenCreateRequest>()
+            val dosen = dosenService.createDosen(request)
+            call.respond(HttpStatusCode.Created, dosen)
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
+        }
     }
 
-    suspend fun addBimbingan(call: ApplicationCall) {
-        val dosenId = UUID.fromString(call.parameters["id"]!!)
-        val mhsId = UUID.fromString(call.parameters["mhsId"]!!)
-        call.respond(service.addBimbingan(dosenId, mhsId))
+    suspend fun updateDosen(call: ApplicationCall) {
+        try {
+            val id = call.parameters["id"] ?: return call.respond(HttpStatusCode.BadRequest, "Missing ID")
+            val request = call.receive<DosenUpdateRequest>()
+            val dosen = dosenService.updateDosen(id, request)
+            if (dosen != null) {
+                call.respond(HttpStatusCode.OK, dosen)
+            } else {
+                call.respond(HttpStatusCode.NotFound, "Dosen not found")
+            }
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
+        }
     }
 
-    suspend fun removeBimbingan(call: ApplicationCall) {
-        val dosenId = UUID.fromString(call.parameters["id"]!!)
-        val mhsId = UUID.fromString(call.parameters["mhsId"]!!)
-        call.respond(service.removeBimbingan(dosenId, mhsId))
+    suspend fun deleteDosen(call: ApplicationCall) {
+        try {
+            val id = call.parameters["id"] ?: return call.respond(HttpStatusCode.BadRequest, "Missing ID")
+            val deleted = dosenService.deleteDosen(id)
+            if (deleted) {
+                call.respond(HttpStatusCode.OK, "Dosen deleted successfully")
+            } else {
+                call.respond(HttpStatusCode.NotFound, "Dosen not found")
+            }
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to e.message))
+        }
     }
 }

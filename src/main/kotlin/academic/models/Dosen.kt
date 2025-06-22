@@ -1,25 +1,37 @@
 package academic.models
 
-import academic.db.tables.DosenTable
-import org.jetbrains.exposed.sql.ResultRow
-import java.util.*
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Dosen(
-    val id: UUID,
+    val id: String,
     val nama: String,
     val nidn: String,
     val email: String,
     val telepon: String,
-    val departemen: String
+    val departemen: String,
+    val password: String
 )
 
-fun ResultRow.toDosen(): Dosen {
-    return Dosen(
-        id = this[DosenTable.id],
-        nama = this[DosenTable.nama],
-        nidn = this[DosenTable.nidn],
-        email = this[DosenTable.email],
-        telepon = this[DosenTable.telepon],
-        departemen = this[DosenTable.departemen]
-    )
-}
+@Serializable
+data class DosenResponse(
+    val id: String,
+    val nama: String,
+    val nidn: String
+)
+
+@Serializable
+data class DosenCreateRequest(
+    val nama: String,
+    val nidn: String,
+    val email: String,
+    val telepon: String,
+    val departemen: String,
+    val password: String
+)
+
+@Serializable
+data class DosenUpdateRequest(
+    val nama: String? = null,
+    val password: String? = null
+)

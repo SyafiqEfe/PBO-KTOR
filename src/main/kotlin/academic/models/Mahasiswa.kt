@@ -1,27 +1,43 @@
 package academic.models
 
-import academic.db.tables.MahasiswaTable
-import org.jetbrains.exposed.sql.ResultRow
-import java.util.*
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Mahasiswa(
-    val id: UUID,
+    val id: String,
     val nama: String,
     val nim: String,
     val email: String,
     val telepon: String,
     val programStudi: String,
-    val semester: Int
+    val semester: Int,
+    val kelas: String,
+    val password: String
 )
 
-fun ResultRow.toMahasiswa(): Mahasiswa {
-    return Mahasiswa(
-        id = this[MahasiswaTable.id],
-        nama = this[MahasiswaTable.nama],
-        nim = this[MahasiswaTable.nim],
-        email = this[MahasiswaTable.email],
-        telepon = this[MahasiswaTable.telepon],
-        programStudi = this[MahasiswaTable.programStudi],
-        semester = this[MahasiswaTable.semester]
-    )
-}
+@Serializable
+data class MahasiswaResponse(
+    val id: String,
+    val nama: String,
+    val nim: String,
+    val kelas: String
+)
+
+@Serializable
+data class MahasiswaCreateRequest(
+    val nama: String,
+    val nim: String,
+    val email: String,
+    val telepon: String,
+    val programStudi: String,
+    val semester: Int,
+    val kelas: String,
+    val password: String
+)
+
+@Serializable
+data class MahasiswaUpdateRequest(
+    val nama: String? = null,
+    val kelas: String? = null,
+    val password: String? = null
+)

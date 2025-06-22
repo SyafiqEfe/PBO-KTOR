@@ -117,6 +117,18 @@
       .section.active {
         display: block;
       }
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+      .error {
+        color: #e74c3c;
+        background-color: #fdf2f2;
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 1rem 0;
+      }
     </style>
   </head>
   <body>
@@ -145,7 +157,7 @@
         <div class="card">
           <h4>Informasi Mahasiswa</h4>
           <div id="studentInfo">
-            <p>Loading...</p>
+            <p class="loading">Loading...</p>
           </div>
         </div>
 
@@ -162,6 +174,7 @@
       <div id="courses" class="section">
         <div class="card">
           <h4>Mata Kuliah Yang Diambil</h4>
+          <div id="coursesError" class="error" style="display: none"></div>
           <table id="myCoursesTable">
             <thead>
               <tr>
@@ -174,7 +187,7 @@
             </thead>
             <tbody>
               <tr>
-                <td colspan="5">Loading...</td>
+                <td colspan="5" class="loading">Loading...</td>
               </tr>
             </tbody>
           </table>
@@ -185,6 +198,11 @@
       <div id="available-courses" class="section">
         <div class="card">
           <h4>Mata Kuliah Tersedia</h4>
+          <div
+            id="availableCoursesError"
+            class="error"
+            style="display: none"
+          ></div>
           <table id="availableCoursesTable">
             <thead>
               <tr>
@@ -198,7 +216,7 @@
             </thead>
             <tbody>
               <tr>
-                <td colspan="6">Loading...</td>
+                <td colspan="6" class="loading">Loading...</td>
               </tr>
             </tbody>
           </table>
@@ -210,7 +228,7 @@
         <div class="card">
           <h4>Profil Mahasiswa</h4>
           <div id="profileInfo">
-            <p>Loading...</p>
+            <p class="loading">Loading...</p>
           </div>
           <button class="btn" onclick="editProfile()">Edit Profil</button>
         </div>
@@ -230,6 +248,7 @@
     </div>
 
     <script>
+      // Check authentication and role
       const token = localStorage.getItem("token");
       if (!token) {
         window.location.href = "/login.html";
@@ -242,6 +261,27 @@
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       };
+
+      // Check if user is mahasiswa
+      async function checkMahasiswaRole() {
+        try {
+          const response = await fetch("/api/me", { headers });
+          if (response.ok) {
+            const user = await response.json();
+            if (user.role !== "MAHASISWA") {
+              alert("Access denied. Mahasiswa role required.");
+              window.location.href = "/login.html";
+              return;
+            }
+            currentStudentId = user.id;
+          } else {
+            window.location.href = "/login.html";
+          }
+        } catch (error) {
+          console.error("Error checking role:", error);
+          window.location.href = "/login.html";
+        }
+      }
 
       // Navigation
       function showSection(sectionId) {
@@ -313,41 +353,62 @@
           }
         } catch (error) {
           console.error("Error loading student info:", error);
+          document.getElementById("studentInfo").innerHTML = `
+                    <div class="error">Error loading student information: ${error.message}</div>
+                `;
         }
       }
 
       // Load my courses
       async function loadMyCourses() {
+        const tbody = document.querySelector("#myCoursesTable tbody");
+        const errorDiv = document.getElementById("coursesError");
+
         try {
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="loading">Loading...</td></tr>';
+          errorDiv.style.display = "none";
+
           // This would need to be implemented in the backend
           // For now, show placeholder
-          document.querySelector("#myCoursesTable tbody").innerHTML = `
+          tbody.innerHTML = `
                     <tr><td colspan="5">Belum ada mata kuliah yang diambil</td></tr>
                 `;
         } catch (error) {
           console.error("Error loading courses:", error);
+          errorDiv.textContent = `Error loading courses: ${error.message}`;
+          errorDiv.style.display = "block";
+          tbody.innerHTML = '<tr><td colspan="5">Error loading data</td></tr>';
         }
       }
 
       // Load available courses
       async function loadAvailableCourses() {
+        const tbody = document.querySelector("#availableCoursesTable tbody");
+        const errorDiv = document.getElementById("availableCoursesError");
+
         try {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="loading">Loading...</td></tr>';
+          errorDiv.style.display = "none";
+
           const response = await fetch("/api/matakuliah", { headers });
-          if (response.ok) {
-            const courses = await response.json();
-            const tbody = document.querySelector(
-              "#availableCoursesTable tbody"
-            );
 
-            if (courses.length === 0) {
-              tbody.innerHTML =
-                '<tr><td colspan="6">Tidak ada mata kuliah tersedia</td></tr>';
-              return;
-            }
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
 
-            tbody.innerHTML = courses
-              .map(
-                (course) => `
+          const courses = await response.json();
+
+          if (courses.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="6">Tidak ada mata kuliah tersedia</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = courses
+            .map(
+              (course) => `
                         <tr>
                             <td>${course.kode}</td>
                             <td>${course.nama}</td>
@@ -363,11 +424,13 @@
                             </td>
                         </tr>
                     `
-              )
-              .join("");
-          }
+            )
+            .join("");
         } catch (error) {
           console.error("Error loading available courses:", error);
+          errorDiv.textContent = `Error loading available courses: ${error.message}`;
+          errorDiv.style.display = "block";
+          tbody.innerHTML = '<tr><td colspan="6">Error loading data</td></tr>';
         }
       }
 
@@ -431,7 +494,9 @@
       }
 
       // Initialize
-      loadStudentInfo();
+      checkMahasiswaRole().then(() => {
+        loadStudentInfo();
+      });
     </script>
   </body>
 </html>

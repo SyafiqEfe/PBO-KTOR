@@ -35,20 +35,23 @@ class UserService {
     }
 
     fun login(request: LoginRequest): String {
-        val user = userRepo.findByEmail(request.email)
-            ?: throw Exception("User not found")
-        
-        if (user.password != request.password) { // Should verify hash in production
+        val user = when (request.role.lowercase()) {
+            "mahasiswa" -> userRepo.findByNim(request.identifier)
+            "dosen" -> userRepo.findByNidn(request.identifier)
+            else -> userRepo.findByEmail(request.identifier)
+        } ?: throw Exception("User not found")
+
+        if (user.password != request.password) {
             throw Exception("Invalid password")
         }
-        
+
         return JwtConfig.generateToken(user.id.toString(), user.role)
     }
 
     suspend fun getCurrentUser(call: ApplicationCall): User {
         val principal = call.principal<JWTPrincipal>()
             ?: throw Exception("No authentication")
-        
+
         val userId = principal.payload.getClaim("userId").asString()
         return getById(UUID.fromString(userId))
             ?: throw Exception("User not found")

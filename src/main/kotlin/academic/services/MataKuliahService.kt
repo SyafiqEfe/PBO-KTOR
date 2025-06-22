@@ -1,18 +1,21 @@
 package academic.services
 
 import academic.models.MataKuliah
+import academic.models.MataKuliahCreateRequest
+import academic.models.MataKuliahUpdateRequest
 import academic.repositories.MataKuliahRepository
 
-class MataKuliahService {
-    private val mkRepo = MataKuliahRepository()
+class MataKuliahService(
+    private val mataKuliahRepo: MataKuliahRepository = MataKuliahRepository()
+) {
+    fun getAll(): List<MataKuliah> = mataKuliahRepo.findAll()
 
-    fun getAll(): List<MataKuliah> = mkRepo.getAll()
+    fun getByKode(kode: String): MataKuliah? = mataKuliahRepo.findByKode(kode)
 
-    fun getByKode(kode: String): MataKuliah? = mkRepo.getByKode(kode)
+    fun create(request: MataKuliahCreateRequest): MataKuliah = mataKuliahRepo.create(request)
 
-    fun create(mk: MataKuliah): MataKuliah = mkRepo.create(mk)
+    fun update(kode: String, request: MataKuliahUpdateRequest): Boolean = 
+        mataKuliahRepo.update(kode, request)
 
-    fun update(kode: String, updated: MataKuliah): Boolean = mkRepo.update(kode, updated)
-
-    fun delete(kode: String): Boolean = mkRepo.delete(kode)
+    fun delete(kode: String): Boolean = mataKuliahRepo.delete(kode)
 }

@@ -1,31 +1,36 @@
 package academic.services
 
-import academic.models.Dosen
+import academic.models.*
 import academic.repositories.DosenRepository
-import academic.repositories.MahasiswaRepository
 import java.util.*
 
-class DosenService(
-    private val dosenRepo: DosenRepository = DosenRepository(),
-    private val mhsRepo: MahasiswaRepository = MahasiswaRepository()
-) {
-    fun getAll(): List<Dosen> = dosenRepo.getAll()
+class DosenService {
+    private val dosenRepository = DosenRepository()
 
-    fun getById(id: UUID): Dosen? = dosenRepo.getById(id)
-
-    fun create(dosen: Dosen): Dosen = dosenRepo.create(dosen)
-
-    fun update(id: UUID, updated: Dosen): Boolean = dosenRepo.update(id, updated)
-
-    fun delete(id: UUID): Boolean = dosenRepo.delete(id)
-
-    fun addBimbingan(dosenId: UUID, mhsId: UUID): String {
-        if (dosenRepo.getById(dosenId) == null) throw Exception("Dosen tidak ditemukan")
-        if (mhsRepo.getById(mhsId) == null) throw Exception("Mahasiswa tidak ditemukan")
-        return "Bimbingan added successfully"
+    fun getAllDosen(): List<DosenResponse> {
+        return dosenRepository.findAll().map { dosen ->
+            DosenResponse(
+                id = dosen.id,
+                nama = dosen.nama,
+                nidn = dosen.nidn
+            )
+        }
     }
 
-    fun removeBimbingan(dosenId: UUID, mhsId: UUID): String {
-        return "Bimbingan removed successfully"
+    fun getDosenById(id: String): Dosen? {
+        return dosenRepository.findById(id)
+    }
+
+    fun createDosen(request: DosenCreateRequest): Dosen {
+        return dosenRepository.create(request)
+    }
+
+    fun updateDosen(id: String, request: DosenUpdateRequest): Dosen? {
+        val updated = dosenRepository.update(id, request)
+        return if (updated) dosenRepository.findById(id) else null
+    }
+
+    fun deleteDosen(id: String): Boolean {
+        return dosenRepository.delete(id)
     }
 }

@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
 class UserRepository {
+
     fun getAll(): List<User> = transaction {
         UserTable.selectAll().map { it.toUser() }
     }
@@ -25,6 +26,18 @@ class UserRepository {
             .singleOrNull()
     }
 
+    fun findByNim(nim: String): User? = transaction {
+        UserTable.select { UserTable.nim eq nim }
+            .mapNotNull { it.toUser() }
+            .singleOrNull()
+    }
+
+    fun findByNidn(nidn: String): User? = transaction {
+        UserTable.select { UserTable.nidn eq nidn }
+            .mapNotNull { it.toUser() }
+            .singleOrNull()
+    }
+
     fun create(user: User): User = transaction {
         UserTable.insert {
             it[id] = user.id
@@ -32,6 +45,8 @@ class UserRepository {
             it[password] = user.password
             it[name] = user.name
             it[role] = user.role
+            it[nim] = user.nim
+            it[nidn] = user.nidn
         }
         user
     }
